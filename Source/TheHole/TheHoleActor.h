@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/StaticMeshActor.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -15,7 +16,7 @@ USTRUCT()
 struct FHead {
 	GENERATED_BODY()
 
-		FVector Position;
+	FVector Position;
 	float Confidence;
 };
 
@@ -44,6 +45,7 @@ private:
 		AStaticMeshActor* ScreenMesh;
 	UPROPERTY(VisibleAnywhere)
 		UCameraComponent* Camera;
+	ULocalPlayer* LocalPlayer;
 
 	UPROPERTY(EditInstanceOnly)
 		float LerpSpeed;

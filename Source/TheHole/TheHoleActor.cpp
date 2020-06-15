@@ -45,9 +45,22 @@ void ATheHoleActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector Target = ScreenMesh->GetActorLocation() + ComputeTarget();
+	FVector Target = ComputeTarget();
 
-	SetActorLocation(Target);
+	// Camera location
+	SetActorLocation(ScreenMesh->GetActorLocation() + Target);
+
+	// Camera perspective
+	FMinimalViewInfo View;
+	Camera->GetCameraView(0, View);
+	FMatrix ViewMat, ProjMat, ViewProjMat;
+	UGameplayStatics::GetViewProjectionMatrix(View, ViewMat, ProjMat, ViewProjMat);
+	FVector ScreenDims = ScreenMesh->GetActorScale();
+
+	View.OffCenterProjectionOffset = FVector2D(
+		Target.X / ScreenDims.X,
+		Target.Y / ScreenDims.Y
+	);
 }
 
 /**
