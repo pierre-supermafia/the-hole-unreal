@@ -5,7 +5,19 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/StaticMeshActor.h"
+
+#include "Kismet/GameplayStatics.h"
+
 #include "TheHoleActor.generated.h"
+
+USTRUCT()
+struct FHead {
+	GENERATED_BODY()
+
+		FVector Position;
+	float Confidence;
+};
 
 UCLASS()
 class THEHOLE_API ATheHoleActor : public AActor
@@ -27,31 +39,24 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-public:
-	USTRUCT()
-		struct Head {
-		GENERATED_BODY()
-
-			FVector Position;
-		float Confidence;
-	};
-
-
 private:
-	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* ScreenMesh;
+	UPROPERTY(EditInstanceOnly)
+		AStaticMeshActor* ScreenMesh;
 	UPROPERTY(VisibleAnywhere)
 		UCameraComponent* Camera;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditInstanceOnly)
 		float LerpSpeed;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditInstanceOnly)
 		float ConfidenceDecay;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditInstanceOnly)
 		FVector2D RealScreenDimensions;
 
 	float Scale;
 
-	FVector Target;
+	TMap<uint8, FHead> Heads;
+	TMap<uint8, FVector> Blobs;
+
+	FVector ComputeTarget() const;
 };
