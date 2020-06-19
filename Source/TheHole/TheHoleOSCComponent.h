@@ -50,11 +50,13 @@ public:
 	void DecayConfidences();
 
 	UPROPERTY(EditInstanceOnly)
-		FString OwnIPAdress;
+		FString ReceiveIPAdress;
+	UPROPERTY(EditInstanceOnly)
+		int32 ReceivePort;
 	UPROPERTY(EditInstanceOnly)
 		FString BroadcastIPAdress;
 	UPROPERTY(EditInstanceOnly)
-		int32 Port;
+		int32 BroadcastPort;
 	UPROPERTY(EditInstanceOnly)
 		float ConfidenceDecay;
 

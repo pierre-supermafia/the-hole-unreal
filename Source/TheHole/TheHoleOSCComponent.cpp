@@ -5,7 +5,7 @@
 
 const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/request/handhsake");
 const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request/update");
-const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton");
+const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
 
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.2f;
@@ -84,9 +84,9 @@ void UTheHoleOSCComponent::DecayConfidences()
 
 void UTheHoleOSCComponent::InitOSC()
 {
-	Client = UOSCManager::CreateOSCClient(BroadcastIPAdress, Port, "TheHoleClient");
+	Client = UOSCManager::CreateOSCClient(BroadcastIPAdress, BroadcastPort, "TheHoleClient");
 
-	Server = UOSCManager::CreateOSCServer(OwnIPAdress, Port, false, true, "TheHoleServer");
+	Server = UOSCManager::CreateOSCServer(ReceiveIPAdress, ReceivePort, false, true, "TheHoleServer");
 	Server->SetWhitelistClientsEnabled(false);
 
 	Server->BindEventToOnOSCAddressPatternMatchesPath(SkeletonAddress, OnSkeletonReceivedDelegate);
@@ -98,9 +98,9 @@ void UTheHoleOSCComponent::InitOSC()
 
 void UTheHoleOSCComponent::CreateMessages()
 {
-	// Both messages have the same data : the port
+	// Both messages have the same data : the 
 	FOSCStream Stream;
-	Stream.WriteInt32(Port);
+	Stream.WriteInt32(ReceivePort);
 
 	HandshakeMessage.SetAddress(HandshakeAddress);
 	HandshakeMessage.GetPacket()->WriteData(Stream);
