@@ -3,7 +3,7 @@
 
 #include "TheHoleOSCComponent.h"
 
-const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/request/handhsake");
+const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/request/handshake");
 const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request/update");
 const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
@@ -98,15 +98,11 @@ void UTheHoleOSCComponent::InitOSC()
 
 void UTheHoleOSCComponent::CreateMessages()
 {
-	// Both messages have the same data : the 
-	FOSCStream Stream;
-	Stream.WriteInt32(ReceivePort);
-
 	HandshakeMessage.SetAddress(HandshakeAddress);
-	HandshakeMessage.GetPacket()->WriteData(Stream);
+	UOSCManager::AddInt32(HandshakeMessage, ReceivePort);
 
 	UpdateMessage.SetAddress(UpdateAddress);
-	UpdateMessage.GetPacket()->WriteData(Stream);
+	UOSCManager::AddInt32(UpdateMessage, ReceivePort);
 }
 
 void UTheHoleOSCComponent::SendHandshake()
