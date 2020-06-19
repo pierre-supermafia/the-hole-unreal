@@ -3,6 +3,8 @@
 
 #include "TheHoleActor.h"
 
+const FVector ATheHoleActor::DefaultPosition = FVector(0.0f, 0.0f, 1.8f);
+
 // Sets default values
 ATheHoleActor::ATheHoleActor()
 {
@@ -10,18 +12,19 @@ ATheHoleActor::ATheHoleActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+
+	OSCComponent = CreateDefaultSubobject<UTheHoleOSCComponent>(TEXT("OSC"));
 }
 
-/**
-*/
-void ATheHoleActor::SetSkeletonData(int index, FVector Position, float confidence)
+void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc)
 {
-}
-
-/**
-*/
-void ATheHoleActor::SetBlobData(FVector Position)
-{
+	FTransform Transform = ScreenMesh->GetTransform();
+	// Bottom-left corner
+	pa = Transform.TransformPosition(FVector(-0.5f, 0.5f, 0.0f));
+	// Bottom-right corner
+	pb = Transform.TransformPosition(FVector(0.5f, 0.5f, 0.0f));
+	// Top-left corner
+	pc = Transform.TransformPosition(FVector(-0.5f, -0.5f, 0.0f));
 }
 
 // Called when the game starts or when spawned
@@ -32,6 +35,8 @@ void ATheHoleActor::BeginPlay()
 	FVector ScreenDimensions = ScreenMesh->GetActorScale();
 	Scale = 0.5f * ScreenDimensions.X / RealScreenDimensions.X
 		+ 0.5f * ScreenDimensions.Y / RealScreenDimensions.Y;
+
+	Scale *= 100; // PlaneMeshes have sides 100 units long 
 
 	APlayerController* OurPlayerController = UGameplayStatics::GetPlayerController(this, 0);
 	if (OurPlayerController)
@@ -48,33 +53,29 @@ void ATheHoleActor::Tick(float DeltaTime)
 	FVector Target = ComputeTarget();
 
 	// Camera location
-	SetActorLocation(ScreenMesh->GetActorLocation() + Target);
+	SetActorLocation(Target);
 
 	// Camera perspective
-	FMinimalViewInfo View;
-	Camera->GetCameraView(0, View);
-	FMatrix ViewMat, ProjMat, ViewProjMat;
-	UGameplayStatics::GetViewProjectionMatrix(View, ViewMat, ProjMat, ViewProjMat);
-	FVector ScreenDims = ScreenMesh->GetActorScale();
-
-	View.OffCenterProjectionOffset = FVector2D(
-		Target.X / ScreenDims.X,
-		Target.Y / ScreenDims.Y
-	);
+	//if (!SceneViewExtensionRef.IsValid())
+	//{
+	//	SceneViewExtensionRef = FSceneViewExtensions::NewExtension<TheHoleSceneViewExtension, ATheHoleActor*>(this);
+	//}
 }
 
 /**
 */
 FVector ATheHoleActor::ComputeTarget() const
 {
-	// DEBUG : until OSC is implemented, the camera just rotates around the screen
-	const float speed = 0.5f;
-	float t = speed * GetGameTimeSinceCreation();
-	const float radius = 5;
-	return FVector(
-		radius * cosf(t),
-		radius * sinf(t),
-		radius
-	);
+	FVector Target;
+	if (OSCComponent->GetHeadLocation(Target))
+	{
+		return Scale * Target + ScreenMesh->GetActorLocation();
+	}
+	else
+	{
+		return Scale * DefaultPosition + ScreenMesh->GetActorLocation();
+	}
+
+	OSCComponent->DecayConfidences();
 }
 

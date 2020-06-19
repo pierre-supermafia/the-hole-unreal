@@ -4,21 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Camera/CameraComponent.h"
-#include "Engine/LocalPlayer.h"
+
 #include "Engine/StaticMeshActor.h"
 
+#include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "TheHoleSceneViewExtension.h"
+
+#include "TheHoleOSCComponent.h"
 
 #include "TheHoleActor.generated.h"
-
-USTRUCT()
-struct FHead {
-	GENERATED_BODY()
-
-	FVector Position;
-	float Confidence;
-};
 
 UCLASS()
 class THEHOLE_API ATheHoleActor : public AActor
@@ -29,8 +24,7 @@ public:
 	// Sets default values for this actor's properties
 	ATheHoleActor();
 
-	void SetSkeletonData(int index, FVector Position, float confidence);
-	void SetBlobData(FVector Position);
+	void GetScreenCorners(FVector& pa, FVector& pb, FVector& pc);
 
 protected:
 	// Called when the game starts or when spawned
@@ -43,22 +37,22 @@ public:
 private:
 	UPROPERTY(EditInstanceOnly)
 		AStaticMeshActor* ScreenMesh;
+	UPROPERTY(EditInstanceOnly)
+		UTheHoleOSCComponent* OSCComponent;
 	UPROPERTY(VisibleAnywhere)
 		UCameraComponent* Camera;
-	ULocalPlayer* LocalPlayer;
+	
+	TSharedPtr<TheHoleSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtensionRef;
 
 	UPROPERTY(EditInstanceOnly)
 		float LerpSpeed;
-	UPROPERTY(EditInstanceOnly)
-		float ConfidenceDecay;
+	
 
 	UPROPERTY(EditInstanceOnly)
 		FVector2D RealScreenDimensions;
 
 	float Scale;
-
-	TMap<uint8, FHead> Heads;
-	TMap<uint8, FVector> Blobs;
+	static const FVector DefaultPosition;
 
 	FVector ComputeTarget() const;
 };
