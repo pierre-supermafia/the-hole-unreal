@@ -5,20 +5,35 @@
 #include "CoreMinimal.h"
 #include "SceneViewExtension.h"
 
+class ATheHoleActor;
+
 /**
  * 
  */
 class TheHoleSceneViewExtension : public FSceneViewExtensionBase
 {
 public:
-	TheHoleSceneViewExtension(const FAutoRegister& AutoRegister);
+	TheHoleSceneViewExtension(const FAutoRegister& AutoRegister, ATheHoleActor* TheHoleActor);
 	~TheHoleSceneViewExtension();
 
+	// Implemented interface methods
+	virtual void SetupViewProjectionMatrix(FSceneViewProjectionData& InOutProjectionData) override;
+	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+
+	// Unimplemented interface methods
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {}
-	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override {}
-	virtual void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override {};
+	virtual void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override {}
 	virtual void PreRenderView_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneView& InView) override {}
 	virtual void PreRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override {};
 	virtual void PostRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override {};
 	virtual int32 GetPriority() const override { return -10; }
+
+private:
+	ATheHoleActor* TheHoleActor;
+
+	void ComputeMatrices(
+		FMatrix& ProjectionMatrix,
+		FMatrix& RotationMatrix,
+		FVector& TranslationComponent) const;
+
 };
