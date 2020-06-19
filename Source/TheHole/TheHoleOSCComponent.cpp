@@ -8,6 +8,8 @@ const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request
 const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
 
+const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
+
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.2f;
 
 // Sets default values for this component's properties
@@ -17,8 +19,6 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-
-	CreateMessages();
 }
 
 
@@ -27,8 +27,18 @@ void UTheHoleOSCComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CreateMessages();
 	InitOSC();
 	SendHandshake();	
+}
+
+void UTheHoleOSCComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	GetWorld()->GetTimerManager().ClearTimer(UpdateTimerHandle);
+
+	Server->Stop();
 }
 
 
@@ -87,59 +97,75 @@ void UTheHoleOSCComponent::InitOSC()
 	Client = UOSCManager::CreateOSCClient(BroadcastIPAdress, BroadcastPort, "TheHoleClient");
 
 	Server = UOSCManager::CreateOSCServer(ReceiveIPAdress, ReceivePort, false, true, "TheHoleServer");
-	Server->SetWhitelistClientsEnabled(false);
-
-	Server->BindEventToOnOSCAddressPatternMatchesPath(SkeletonAddress, OnSkeletonReceivedDelegate);
-	Server->BindEventToOnOSCAddressPatternMatchesPath(BlobAddress, OnBlobReceivedDelegate);
-
-	OnSkeletonReceivedDelegate.BindUFunction(this, FName("OnSkeletonReceived"));
-	OnBlobReceivedDelegate.BindUFunction(this, FName("OnBlobReceived"));
+	Server->OnOscMessageReceived.AddDynamic(this, &UTheHoleOSCComponent::OnMessageReceived);
 }
 
 void UTheHoleOSCComponent::CreateMessages()
 {
 	HandshakeMessage.SetAddress(HandshakeAddress);
-	UOSCManager::AddInt32(HandshakeMessage, ReceivePort);
+	HandshakeMessage = UOSCManager::AddInt32(HandshakeMessage, (int32)ReceivePort);
 
 	UpdateMessage.SetAddress(UpdateAddress);
-	UOSCManager::AddInt32(UpdateMessage, ReceivePort);
+	UpdateMessage = UOSCManager::AddInt32(UpdateMessage, (int32)ReceivePort);
 }
 
 void UTheHoleOSCComponent::SendHandshake()
 {
 	Client->SendOSCMessage(HandshakeMessage);
+
+	// After the handshake, send update requests
+	// so that the trackers doesn't forget about us
+	GetWorld()->GetTimerManager().SetTimer(
+		UpdateTimerHandle,
+		this,
+		&UTheHoleOSCComponent::SendUpdate,
+		UpdatePeriod,
+		true
+	);
 }
 
 void UTheHoleOSCComponent::SendUpdate()
 {
+	UE_LOG(LogTemp, Log, TEXT("SEND UPDATE"));
 	Client->SendOSCMessage(UpdateMessage);
 }
 
-void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCAddress& Address, FOSCMessage& Message)
+void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port)
 {
-	FOSCStream Stream;
-	Message.GetPacket()->ReadData(Stream);
+	FOSCAddress Address = Message.GetAddress();
+	if (Address.Matches(SkeletonAddress))
+	{
+		OnSkeletonReceived(Message);
+	}
+	else if (Address.Matches(BlobAddress))
+	{
+		OnBlobReceived(Message);
+	}
+}
 
-	uint8 id = Stream.ReadInt32();
+void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
+{
+	int32 id;
+	float x, y, z, conf;
+	UOSCManager::GetInt32(Message, 0, id);
 
-	float x = Stream.ReadFloat();
-	float y = Stream.ReadFloat();
-	float z = Stream.ReadFloat();
-	float conf = Stream.ReadFloat();
+	UOSCManager::GetFloat(Message, 1, x);
+	UOSCManager::GetFloat(Message, 2, y);
+	UOSCManager::GetFloat(Message, 3, z);
+	UOSCManager::GetFloat(Message, 4, conf);
 
 	Heads.Add(id, FHead(FVector(x, y, z), conf));
 }
 
-void UTheHoleOSCComponent::OnBlobReceived(const FOSCAddress& Address, FOSCMessage& Message)
+void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 {
-	FOSCStream Stream;
-	Message.GetPacket()->ReadData(Stream);
+	int32 id;
+	float x, y, z;
+	UOSCManager::GetInt32(Message, 0, id);
 
-	uint8 id = Stream.ReadInt32();
-
-	float x = Stream.ReadFloat();
-	float y = Stream.ReadFloat();
-	float z = Stream.ReadFloat();
+	UOSCManager::GetFloat(Message, 1, x);
+	UOSCManager::GetFloat(Message, 2, y);
+	UOSCManager::GetFloat(Message, 3, z);
 
 	Blobs.Add(id, FVector(x, y, z));
 }

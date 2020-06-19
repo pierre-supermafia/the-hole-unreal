@@ -39,6 +39,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	// Called every frame
@@ -76,13 +77,18 @@ private:
 	void CreateMessages();
 
 	void SendHandshake();
+	UFUNCTION()
 	void SendUpdate();
+	FTimerHandle UpdateTimerHandle;
+	static const float UpdatePeriod;
 
-	FOSCDispatchMessageEventBP OnSkeletonReceivedDelegate;
-	FOSCDispatchMessageEventBP OnBlobReceivedDelegate;
+	FOSCDispatchMessageEvent OnSkeletonReceivedDelegate;
+	FOSCDispatchMessageEvent OnBlobReceivedDelegate;
 
-	void OnSkeletonReceived(const FOSCAddress& Address, FOSCMessage& Message);
-	void OnBlobReceived(const FOSCAddress& Address, FOSCMessage& Message);
+	UFUNCTION()
+	void OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port);
+	void OnSkeletonReceived(const FOSCMessage& Message);
+	void OnBlobReceived(const FOSCMessage& Message);
 
 	TMap<uint8, FHead> Heads;
 	TMap<uint8, FVector> Blobs;
