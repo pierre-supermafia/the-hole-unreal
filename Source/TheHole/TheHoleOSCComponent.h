@@ -48,7 +48,6 @@ public:
 public:
 
 	bool GetHeadLocation(FVector& HeadLocation) const;
-	void DecayConfidences();
 
 	UPROPERTY(EditInstanceOnly)
 		FString ReceiveIPAdress;
@@ -94,4 +93,6 @@ private:
 	TMap<uint8, FVector> Blobs;
 
 	static const float LowerConfidenceThreshold;
+
+	void DecayConfidences();
 };

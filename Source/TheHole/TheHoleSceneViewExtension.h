@@ -18,15 +18,15 @@ public:
 
 	// Implemented interface methods
 	virtual void SetupViewProjectionMatrix(FSceneViewProjectionData& InOutProjectionData) override;
-	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+	virtual int32 GetPriority() const override { return 0; }
 
 	// Unimplemented interface methods
+	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override {}
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {}
 	virtual void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override {}
 	virtual void PreRenderView_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneView& InView) override {}
 	virtual void PreRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override {};
 	virtual void PostRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override {};
-	virtual int32 GetPriority() const override { return -10; }
 
 private:
 	ATheHoleActor* TheHoleActor;

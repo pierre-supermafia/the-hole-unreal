@@ -10,11 +10,6 @@ TheHoleSceneViewExtension::TheHoleSceneViewExtension(const FAutoRegister& AutoRe
 
 TheHoleSceneViewExtension::~TheHoleSceneViewExtension() {}
 
-void TheHoleSceneViewExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView)
-{
-	//InView.UpdateProjectionMatrix(ComputeProjectionMatrix());
-}
-
 void TheHoleSceneViewExtension::SetupViewProjectionMatrix(FSceneViewProjectionData& InOutProjectionData)
 {
 	ComputeMatrices(
@@ -34,6 +29,7 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	// "Generalized Perspective Projection," 2009, 
 	// http://csc.lsu.edu/~kooima/pdfs/gen-perspective.pdf 
 
+	// Points of interest
 	FVector pe = TheHoleActor->GetActorLocation();
 	FVector pa, pb, pc;
 	TheHoleActor->GetScreenCorners(pa, pb, pc);
@@ -43,6 +39,7 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	va = pa - pe;
 	vb = pb - pe;
 	vc = pc - pe;
+	UE_LOG(LogTemp, Log, TEXT("va : %s"), *va.ToString());
 
 	// Orthonormal basis for the screen
 	FVector vr, vu, vn; // right, up, normal
@@ -51,6 +48,14 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	vu = pc - pa;
 	vu.Normalize();
 	vn = -FVector::CrossProduct(vr, vu);
+
+	UE_LOG(LogTemp, Log, TEXT("vr : %s"), *vr.ToString());
+
+	// Rotation matrix
+	RotationMatrix.SetIdentity();
+	RotationMatrix.M[0][0] = vr.X; RotationMatrix.M[0][1] = vr.Y; RotationMatrix.M[0][2] = vr.Z;
+	RotationMatrix.M[1][0] = vu.X; RotationMatrix.M[1][1] = vu.Y; RotationMatrix.M[1][2] = vu.Z;
+	RotationMatrix.M[2][0] = vn.X; RotationMatrix.M[2][1] = vn.Y; RotationMatrix.M[2][2] = vn.Z;
 
 	// Clip plane distances
 	float n = GNearClippingPlane;
@@ -62,6 +67,11 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	float b = FVector::DotProduct(vu, va) * nd;
 	float t = FVector::DotProduct(vu, vc) * nd;
 
+	UE_LOG(LogTemp, Log, TEXT("l : %f"), l);
+	UE_LOG(LogTemp, Log, TEXT("r : %f"), r);
+	UE_LOG(LogTemp, Log, TEXT("b : %f"), b);
+	UE_LOG(LogTemp, Log, TEXT("t : %f"), t);
+
 	// UE matrices are in column-major order
 	ProjectionMatrix.SetIdentity();
 	ProjectionMatrix.M[0][0] = 2.0f * n / (r - l);
@@ -70,7 +80,7 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	ProjectionMatrix.M[2][1] = (t + b) / (t - b);
 	ProjectionMatrix.M[2][2] = -(f) / (f - n);
 	ProjectionMatrix.M[2][3] = -1.0f;
-	ProjectionMatrix.M[3][2] = -(n * f) / (f - n);
+	ProjectionMatrix.M[3][2] = -(f * n) / (f - n);
 	ProjectionMatrix.M[3][3] = 0.0f;
 
 	FMatrix matFlipZ;
@@ -81,17 +91,9 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	ProjectionMatrix = ProjectionMatrix * matFlipZ;
 
 	// "Normalization" for UE
-	//ProjectionMatrix *= 1.0f / ProjectionMatrix.M[0][0];
+	ProjectionMatrix *= 1.0f / ProjectionMatrix.M[0][0];
 	ProjectionMatrix.M[2][2] = 0.0f;
-	ProjectionMatrix.M[3][0] = 0.0f;
-	ProjectionMatrix.M[3][1] = 0.0f;
 	ProjectionMatrix.M[3][2] = n;
-
-	// Rotation matrix
-	RotationMatrix.SetIdentity();
-	RotationMatrix.M[0][0] = vr.X; RotationMatrix.M[0][1] = vr.Y; RotationMatrix.M[0][2] = vr.Z;
-	RotationMatrix.M[1][0] = vu.X; RotationMatrix.M[1][1] = vu.Y; RotationMatrix.M[1][2] = vu.Z;
-	RotationMatrix.M[2][0] = vn.X; RotationMatrix.M[2][1] = vn.Y; RotationMatrix.M[2][2] = vn.Z;
 
 	TranslationComponent = pe;
 }

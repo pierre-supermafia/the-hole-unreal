@@ -47,7 +47,7 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	DecayConfidences();
 }
 
 bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation) const
@@ -113,7 +113,7 @@ void UTheHoleOSCComponent::SendHandshake()
 {
 	Client->SendOSCMessage(HandshakeMessage);
 
-	// After the handshake, send update requests
+	// After the handshake, send regular update requests
 	// so that the trackers doesn't forget about us
 	GetWorld()->GetTimerManager().SetTimer(
 		UpdateTimerHandle,
