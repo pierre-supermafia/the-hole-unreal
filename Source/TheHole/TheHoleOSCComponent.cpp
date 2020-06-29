@@ -7,9 +7,10 @@ const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/requ
 const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request/update");
 const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
+const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
-
+const float UTheHoleOSCComponent::MultipleBodiesWarningDuration = 1.5f;
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.2f;
 
 // Sets default values for this component's properties
@@ -18,7 +19,6 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
 }
 
 
@@ -48,9 +48,28 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	DecayConfidences();
+
+	if (MultipleBodiesWarningTimer > 0)
+	{
+		// TODO: display warning message instead of perspective
+		MultipleBodiesWarningTimer -= DeltaTime;
+	}
 }
 
-bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation) const
+bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
+{
+	if (MultipleBodiesWarningTimer <= 0)
+	{
+		CheckMultipleBodies();
+	}
+	if (MultipleBodiesWarningTimer > 0)
+	{
+		return false;
+	}
+	return GetSkeletonHead(HeadLocation) || GetBlobHead(HeadLocation);
+}
+
+bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
 {
 	float TotalConfidence = 0;
 	FVector TotalPosition = FVector(0, 0, 0);
@@ -65,21 +84,62 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation) const
 		HeadLocation = TotalPosition / TotalConfidence;
 		return true;
 	}
-	else if (Blobs.Num() > 0)
+
+	return false;
+}
+
+bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
+{
+	if (Blobs.Num() > 0)
 	{
-		TotalPosition = FVector(0, 0, 0);
+		HeadLocation = FVector(0, 0, 0);
 		uint8 NumberOfBlobs = 0;
 		for (auto it = Blobs.CreateConstIterator(); it; ++it)
 		{
-			TotalPosition += it->Value;
+			HeadLocation += it->Value;
 			NumberOfBlobs++;
 		}
-		HeadLocation = TotalPosition / NumberOfBlobs;
+		HeadLocation /= NumberOfBlobs;
 		return true;
 	}
-	else
+
+	return false;
+}
+
+void UTheHoleOSCComponent::CheckMultipleBodies()
+{
+	// Assuming only one camera uses blob detection, we don't
+	// check for distinct blobs, since we would have received
+	// and alert from the tracker itself
+	for (auto it1 = Heads.CreateConstIterator(); it1; ++it1)
 	{
-		return false;
+		// Check among skeletons
+		for (auto it2 = it1; it2; ++it2)
+		{
+			if (it1 == it2)
+			{
+				continue;
+			}
+			float SquareDistance = FVector::DistSquared(
+				it1->Value.Position,
+				it2->Value.Position
+			);
+			if (SquareDistance > SquareDistanceThreshold) {
+				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+			}
+		}
+
+		// Check between skeletons and blobs
+		for (auto it2 = Blobs.CreateConstIterator(); it2; ++it2)
+		{
+			float SquareDistance = FVector::DistSquared(
+				it1->Value.Position,
+				it2->Value
+			);
+			if (SquareDistance > SquareDistanceThreshold) {
+				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+			}
+		}
 	}
 }
 
@@ -141,6 +201,10 @@ void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const F
 	{
 		OnBlobReceived(Message);
 	}
+	else if (Address.Matches(MultipleBodiesAlertAddress))
+	{
+		OnMultipleBodiesDetected(Message);
+	}
 }
 
 void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
@@ -168,5 +232,10 @@ void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 3, z);
 
 	Blobs.Add(id, FVector(x, y, z));
+}
+
+void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
+{
+	MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
 }
 
