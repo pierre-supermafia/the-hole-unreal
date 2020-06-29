@@ -10,7 +10,7 @@ const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/tr
 const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
-const float UTheHoleOSCComponent::SquareDistanceThreshold = 1.0f;
+const float UTheHoleOSCComponent::SquareDistanceThreshold = 0.3f * 0.3f;
 const float UTheHoleOSCComponent::MultipleBodiesWarningDuration = 1.5f;
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.2f;
 
@@ -20,6 +20,8 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
+
+	MultipleBodiesWarningTimer = 0;
 }
 
 
@@ -52,7 +54,14 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	if (MultipleBodiesWarningTimer > 0)
 	{
-		// TODO: display warning message instead of perspective
+		// TODO: placeholder warning
+		if (GEngine) GEngine->AddOnScreenDebugMessage(
+			INDEX_NONE,
+			MultipleBodiesWarningDuration,
+			FColor::Red,
+			"MULTIPLE BODIES DETECTED"
+		);
+
 		MultipleBodiesWarningTimer -= DeltaTime;
 	}
 }
@@ -85,7 +94,6 @@ bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
 		HeadLocation = TotalPosition / TotalConfidence;
 		return true;
 	}
-
 	return false;
 }
 
@@ -103,7 +111,6 @@ bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
 		HeadLocation /= NumberOfBlobs;
 		return true;
 	}
-
 	return false;
 }
 
@@ -127,6 +134,7 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
 				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+				return;
 			}
 		}
 
@@ -139,6 +147,7 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
 				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+				return;
 			}
 		}
 	}
@@ -187,7 +196,6 @@ void UTheHoleOSCComponent::SendHandshake()
 
 void UTheHoleOSCComponent::SendUpdate()
 {
-	UE_LOG(LogTemp, Log, TEXT("SEND UPDATE"));
 	Client->SendOSCMessage(UpdateMessage);
 }
 

@@ -53,13 +53,13 @@ void ATheHoleActor::Tick(float DeltaTime)
 	FVector Target = ComputeTarget();
 
 	// Camera location
-	SetActorLocation(Target);
+	SetActorLocation(FMath::Lerp(GetActorLocation() ,Target, LerpSpeed));
 
 	// Camera perspective
-	if (!SceneViewExtensionRef.IsValid())
+	/*if (!SceneViewExtensionRef.IsValid())
 	{
 		SceneViewExtensionRef = FSceneViewExtensions::NewExtension<TheHoleSceneViewExtension, ATheHoleActor*>(this);
-	}
+	}*/
 }
 
 /**
@@ -83,6 +83,7 @@ FVector ATheHoleActor::ComputeTarget() const
 			1.8f
 		);
 		return Scale * Position + ScreenMesh->GetActorLocation();
+		// DEBUG END
 
 		// TODO: keep this one (or fade to black ?)
 		return Scale * DefaultPosition + ScreenMesh->GetActorLocation();

@@ -47,7 +47,7 @@ public:
 
 public:
 
-	bool GetHeadLocation(FVector& HeadLocation) const;
+	bool GetHeadLocation(FVector& HeadLocation);
 
 	UPROPERTY(EditInstanceOnly)
 		FString ReceiveIPAdress;
@@ -65,6 +65,7 @@ private:
 	static const FOSCAddress UpdateAddress;
 	static const FOSCAddress SkeletonAddress;
 	static const FOSCAddress BlobAddress;
+	static const FOSCAddress MultipleBodiesAlertAddress;
 
 	UOSCServer* Server;
 	UOSCClient* Client;
@@ -88,11 +89,20 @@ private:
 	void OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port);
 	void OnSkeletonReceived(const FOSCMessage& Message);
 	void OnBlobReceived(const FOSCMessage& Message);
+	void OnMultipleBodiesDetected(const FOSCMessage& Message);
 
 	TMap<uint8, FHead> Heads;
 	TMap<uint8, FVector> Blobs;
 
+	bool GetSkeletonHead(FVector& HeadLocation) const;
+	bool GetBlobHead(FVector& HeadLocation) const;
+
 	static const float LowerConfidenceThreshold;
+
+	void CheckMultipleBodies();
+	static const float SquareDistanceThreshold;
+	static const float MultipleBodiesWarningDuration;
+	float MultipleBodiesWarningTimer;
 
 	void DecayConfidences();
 };
