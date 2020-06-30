@@ -67,7 +67,9 @@ private:
 	static const FOSCAddress BlobAddress;
 	static const FOSCAddress MultipleBodiesAlertAddress;
 
+	UPROPERTY()
 	UOSCServer* Server;
+	UPROPERTY()
 	UOSCClient* Client;
 
 	FOSCMessage HandshakeMessage;
