@@ -56,10 +56,10 @@ void ATheHoleActor::Tick(float DeltaTime)
 	SetActorLocation(FMath::Lerp(GetActorLocation() ,Target, LerpSpeed));
 
 	// Camera perspective
-	/*if (!SceneViewExtensionRef.IsValid())
+	if (!SceneViewExtensionRef.IsValid())
 	{
 		SceneViewExtensionRef = FSceneViewExtensions::NewExtension<TheHoleSceneViewExtension, ATheHoleActor*>(this);
-	}*/
+	}
 }
 
 /**

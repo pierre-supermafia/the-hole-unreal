@@ -31,6 +31,8 @@ public:
 private:
 	ATheHoleActor* TheHoleActor;
 
+	FMatrix ZAxisBoundTransform;
+
 	void ComputeMatrices(
 		FMatrix& ProjectionMatrix,
 		FMatrix& RotationMatrix,
