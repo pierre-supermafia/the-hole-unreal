@@ -116,9 +116,6 @@ bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
 
 void UTheHoleOSCComponent::CheckMultipleBodies()
 {
-	// Assuming only one camera uses blob detection, we don't
-	// check for distinct blobs, since we would have received
-	// and alert from the tracker itself
 	for (auto it1 = Heads.CreateConstIterator(); it1; ++it1)
 	{
 		// Check among skeletons
@@ -143,6 +140,26 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 		{
 			float SquareDistance = FVector::DistSquared(
 				it1->Value.Position,
+				it2->Value
+			);
+			if (SquareDistance > SquareDistanceThreshold) {
+				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+				return;
+			}
+		}
+	}
+
+	// Check among blobs
+	for (auto it1 = Blobs.CreateConstIterator(); it1; ++it1)
+	{
+		for (auto it2 = it1; it2; ++it2)
+		{
+			if (it1 == it2)
+			{
+				continue;
+			}
+			float SquareDistance = FVector::DistSquared(
+				it1->Value,
 				it2->Value
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
