@@ -244,7 +244,7 @@ void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 3, z);
 	UOSCManager::GetFloat(Message, 4, conf);
 
-	Heads.Add(id, FHead(FVector(x, y, z), conf));
+	Heads.Add(id, FHead(FVector(x, -y, z), conf));
 }
 
 void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
@@ -257,7 +257,7 @@ void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 2, y);
 	UOSCManager::GetFloat(Message, 3, z);
 
-	Blobs.Add(id, FVector(x, y, z));
+	Blobs.Add(id, FVector(x, -y, z));
 }
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
