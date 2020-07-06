@@ -93,8 +93,8 @@ private:
 	void OnBlobReceived(const FOSCMessage& Message);
 	void OnMultipleBodiesDetected(const FOSCMessage& Message);
 
-	TMap<uint8, FHead> Heads;
-	TMap<uint8, FVector> Blobs;
+	TMap<uint8, FHead> SkeletonHeads;
+	TMap<uint8, FHead> BlobHeads;
 
 	bool GetSkeletonHead(FVector& HeadLocation) const;
 	bool GetBlobHead(FVector& HeadLocation) const;

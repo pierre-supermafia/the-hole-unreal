@@ -83,10 +83,10 @@ bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
 {
 	float TotalConfidence = 0;
 	FVector TotalPosition = FVector(0, 0, 0);
-	for (auto it = Heads.CreateConstIterator(); it; ++it)
+	for (auto it = SkeletonHeads.CreateConstIterator(); it; ++it)
 	{
 		TotalConfidence += it->Value.Confidence;
-		TotalPosition += it->Value.Position;
+		TotalPosition += it->Value.Position * it->Value.Confidence;
 	}
 
 	if (TotalConfidence > LowerConfidenceThreshold)
@@ -99,16 +99,16 @@ bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
 
 bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
 {
-	if (Blobs.Num() > 0)
+	if (BlobHeads.Num() > 0)
 	{
 		HeadLocation = FVector(0, 0, 0);
-		uint8 NumberOfBlobs = 0;
-		for (auto it = Blobs.CreateConstIterator(); it; ++it)
+		float TotalConfidence = 0;
+		for (auto it = BlobHeads.CreateConstIterator(); it; ++it)
 		{
-			HeadLocation += it->Value;
-			NumberOfBlobs++;
+			HeadLocation += it->Value.Position * it->Value.Confidence;
+			TotalConfidence += it->Value.Confidence;
 		}
-		HeadLocation /= NumberOfBlobs;
+		HeadLocation /= TotalConfidence;
 		return true;
 	}
 	return false;
@@ -116,12 +116,16 @@ bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
 
 void UTheHoleOSCComponent::CheckMultipleBodies()
 {
-	for (auto it1 = Heads.CreateConstIterator(); it1; ++it1)
+	for (auto it1 = SkeletonHeads.CreateConstIterator(); it1; ++it1)
 	{
+		if (it1->Value.Confidence < LowerConfidenceThreshold)
+		{
+			continue;
+		}
 		// Check among skeletons
 		for (auto it2 = it1; it2; ++it2)
 		{
-			if (it1 == it2)
+			if (it1 == it2 || it2->Value.Confidence < LowerConfidenceThreshold)
 			{
 				continue;
 			}
@@ -136,11 +140,15 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 		}
 
 		// Check between skeletons and blobs
-		for (auto it2 = Blobs.CreateConstIterator(); it2; ++it2)
+		for (auto it2 = BlobHeads.CreateConstIterator(); it2; ++it2)
 		{
+			if (it2->Value.Confidence < LowerConfidenceThreshold)
+			{
+				continue;
+			}
 			float SquareDistance = FVector::DistSquared(
 				it1->Value.Position,
-				it2->Value
+				it2->Value.Position
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
 				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
@@ -150,17 +158,21 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 	}
 
 	// Check among blobs
-	for (auto it1 = Blobs.CreateConstIterator(); it1; ++it1)
+	for (auto it1 = BlobHeads.CreateConstIterator(); it1; ++it1)
 	{
+		if (it1->Value.Confidence < LowerConfidenceThreshold)
+		{
+			continue;
+		}
 		for (auto it2 = it1; it2; ++it2)
 		{
-			if (it1 == it2)
+			if (it1 == it2 || it2->Value.Confidence < LowerConfidenceThreshold)
 			{
 				continue;
 			}
 			float SquareDistance = FVector::DistSquared(
-				it1->Value,
-				it2->Value
+				it1->Value.Position,
+				it2->Value.Position
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
 				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
@@ -172,7 +184,12 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 
 void UTheHoleOSCComponent::DecayConfidences()
 {
-	for (auto it = Heads.CreateIterator(); it; ++it)
+	for (auto it = SkeletonHeads.CreateIterator(); it; ++it)
+	{
+		it.Value().Confidence *= ConfidenceDecay;
+	}
+
+	for (auto it = BlobHeads.CreateIterator(); it; ++it)
 	{
 		it.Value().Confidence *= ConfidenceDecay;
 	}
@@ -244,7 +261,7 @@ void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 3, z);
 	UOSCManager::GetFloat(Message, 4, conf);
 
-	Heads.Add(id, FHead(FVector(x, -y, z), conf));
+	SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
 }
 
 void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
@@ -257,7 +274,7 @@ void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 2, y);
 	UOSCManager::GetFloat(Message, 3, z);
 
-	Blobs.Add(id, FVector(x, -y, z));
+	BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
 }
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
