@@ -52,12 +52,6 @@ void ATheHoleActor::Tick(float DeltaTime)
 	// Camera location
 	if (ComputeTarget())
 	{
-		SetActorLocation(FMath::Lerp(
-			GetActorLocation(),
-			Scale * Target + ScreenMesh->GetActorLocation(),
-			LerpSpeed
-		));
-
 		// Fade in
 		// TODO
 	}
@@ -66,6 +60,12 @@ void ATheHoleActor::Tick(float DeltaTime)
 		// No body detected : fade out
 		// TODO
 	}
+
+	SetActorLocation(FMath::Lerp(
+		GetActorLocation(),
+		Scale * Target + ScreenMesh->GetActorLocation(),
+		LerpSpeed
+	));
 
 	// Camera perspective
 	if (!SceneViewExtensionRef.IsValid())
