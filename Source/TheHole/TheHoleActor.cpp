@@ -67,7 +67,7 @@ void ATheHoleActor::Tick(float DeltaTime)
 FVector ATheHoleActor::ComputeTarget() const
 {
 	FVector Target;
-	if (OSCComponent->GetHeadLocation(Target))
+	if (IsValid(OSCComponent) && OSCComponent->GetHeadLocation(Target))
 	{
 		return Scale * Target + ScreenMesh->GetActorLocation();
 	}

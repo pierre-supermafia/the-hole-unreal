@@ -10,9 +10,9 @@ const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/tr
 const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
-const float UTheHoleOSCComponent::SquareDistanceThreshold = 0.3f * 0.3f;
+const float UTheHoleOSCComponent::SquareDistanceThreshold = 1.5f * 1.5f;
 const float UTheHoleOSCComponent::MultipleBodiesWarningDuration = 1.5f;
-const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.2f;
+const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.5f;
 
 // Sets default values for this component's properties
 UTheHoleOSCComponent::UTheHoleOSCComponent()
