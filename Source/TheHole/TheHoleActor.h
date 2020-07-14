@@ -24,7 +24,7 @@ public:
 	// Sets default values for this actor's properties
 	ATheHoleActor();
 
-	void GetScreenCorners(FVector& pa, FVector& pb, FVector& pc);
+	void GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const;
 
 protected:
 	// Called when the game starts or when spawned
@@ -52,7 +52,7 @@ private:
 		FVector2D RealScreenDimensions;
 
 	float Scale;
-	static const FVector DefaultPosition;
 
-	FVector ComputeTarget() const;
+	FVector Target;
+	bool ComputeTarget();
 };

@@ -3,8 +3,6 @@
 
 #include "TheHoleActor.h"
 
-const FVector ATheHoleActor::DefaultPosition = FVector(0.0f, 0.0f, 1.8f);
-
 // Sets default values
 ATheHoleActor::ATheHoleActor()
 {
@@ -12,11 +10,12 @@ ATheHoleActor::ATheHoleActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-
 	OSCComponent = CreateDefaultSubobject<UTheHoleOSCComponent>(TEXT("OSC"));
+	
+	Target = FVector(0.0f, 0.0f, 1.8f);
 }
 
-void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc)
+void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const
 {
 	FTransform Transform = ScreenMesh->GetTransform();
 	// Bottom-left corner
@@ -50,10 +49,23 @@ void ATheHoleActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector Target = ComputeTarget();
-
 	// Camera location
-	SetActorLocation(FMath::Lerp(GetActorLocation() ,Target, LerpSpeed));
+	if (ComputeTarget())
+	{
+		SetActorLocation(FMath::Lerp(
+			GetActorLocation(),
+			Scale * Target + ScreenMesh->GetActorLocation(),
+			LerpSpeed
+		));
+
+		// Fade in
+		// TODO
+	}
+	else
+	{
+		// No body detected : fade out
+		// TODO
+	}
 
 	// Camera perspective
 	if (!SceneViewExtensionRef.IsValid())
@@ -64,29 +76,12 @@ void ATheHoleActor::Tick(float DeltaTime)
 
 /**
 */
-FVector ATheHoleActor::ComputeTarget() const
+bool ATheHoleActor::ComputeTarget()
 {
-	FVector Target;
-	if (IsValid(OSCComponent) && OSCComponent->GetHeadLocation(Target))
+	if (IsValid(OSCComponent) && !OSCComponent->GetHeadLocation(Target))
 	{
-		return Scale * Target + ScreenMesh->GetActorLocation();
+		return false;
 	}
-	else
-	{
-		// DEBUG: only for perspective testing
-		const float Speed = 0.5f;
-		const float radius = 0.7f;
-		float t = GetGameTimeSinceCreation();
-		FVector Position = FVector(
-			radius * cosf(t * Speed),
-			radius * sinf(t * Speed),
-			1.8f
-		);
-		return Scale * Position + ScreenMesh->GetActorLocation();
-		// DEBUG END
-
-		// TODO: keep this one (or fade to black ?)
-		return Scale * DefaultPosition + ScreenMesh->GetActorLocation();
-	}
+	return true;
 }
 
