@@ -76,14 +76,16 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
 	{
 		return false;
 	}
-	return GetSkeletonHead(HeadLocation) || GetBlobHead(HeadLocation);
+	return GetHead(HeadLocation, SKELETON) || GetHead(HeadLocation, BLOB);
 }
 
-bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
+bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 {
 	float TotalConfidence = 0;
 	FVector TotalPosition = FVector(0, 0, 0);
-	for (auto it = SkeletonHeads.CreateConstIterator(); it; ++it)
+	auto Collection = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
+
+	for (auto it = Collection.CreateConstIterator(); it; ++it)
 	{
 		TotalConfidence += it->Value.Confidence;
 		TotalPosition += it->Value.Position * it->Value.Confidence;
@@ -97,22 +99,6 @@ bool UTheHoleOSCComponent::GetSkeletonHead(FVector& HeadLocation) const
 	return false;
 }
 
-bool UTheHoleOSCComponent::GetBlobHead(FVector& HeadLocation) const
-{
-	if (BlobHeads.Num() > 0)
-	{
-		HeadLocation = FVector(0, 0, 0);
-		float TotalConfidence = 0;
-		for (auto it = BlobHeads.CreateConstIterator(); it; ++it)
-		{
-			HeadLocation += it->Value.Position * it->Value.Confidence;
-			TotalConfidence += it->Value.Confidence;
-		}
-		HeadLocation /= TotalConfidence;
-		return true;
-	}
-	return false;
-}
 
 void UTheHoleOSCComponent::CheckMultipleBodies()
 {

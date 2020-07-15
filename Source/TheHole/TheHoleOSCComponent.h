@@ -27,6 +27,12 @@ struct FHead {
 	float Confidence;
 };
 
+enum BodyType
+{
+	SKELETON,
+	BLOB
+};
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class THEHOLE_API UTheHoleOSCComponent : public UActorComponent
 {
@@ -96,9 +102,7 @@ private:
 	TMap<uint8, FHead> SkeletonHeads;
 	TMap<uint8, FHead> BlobHeads;
 
-	bool GetSkeletonHead(FVector& HeadLocation) const;
-	bool GetBlobHead(FVector& HeadLocation) const;
-
+	bool GetHead(FVector& HeadLocation, BodyType Type) const;
 	static const float LowerConfidenceThreshold;
 
 	void CheckMultipleBodies();
