@@ -54,29 +54,26 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	if (MultipleBodiesWarningTimer > 0)
 	{
-		// TODO: placeholder warning
-		if (GEngine) GEngine->AddOnScreenDebugMessage(
-			INDEX_NONE,
-			MultipleBodiesWarningDuration,
-			FColor::Red,
-			"MULTIPLE BODIES DETECTED"
-		);
-
 		MultipleBodiesWarningTimer -= DeltaTime;
 	}
 }
 
 bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
 {
-	if (MultipleBodiesWarningTimer <= 0)
+	if (LessThanTwoBodies())
 	{
 		CheckMultipleBodies();
 	}
-	if (MultipleBodiesWarningTimer > 0)
+	if (! LessThanTwoBodies())
 	{
 		return false;
 	}
 	return GetHead(HeadLocation, SKELETON) || GetHead(HeadLocation, BLOB);
+}
+
+bool UTheHoleOSCComponent::LessThanTwoBodies() const
+{
+	return MultipleBodiesWarningTimer <= 0;
 }
 
 bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
@@ -204,7 +201,7 @@ void UTheHoleOSCComponent::SendHandshake()
 	Client->SendOSCMessage(HandshakeMessage);
 
 	// After the handshake, send regular update requests
-	// so that the trackers doesn't forget about us
+	// so that the trackers don't forget about us
 	GetWorld()->GetTimerManager().SetTimer(
 		UpdateTimerHandle,
 		this,

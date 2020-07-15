@@ -41,6 +41,8 @@ private:
 	UPROPERTY(EditInstanceOnly)
 	AStaticMeshActor* ScreenMesh;
 	UPROPERTY(EditInstanceOnly)
+	AStaticMeshActor* WarningScreenMesh;
+	UPROPERTY(EditInstanceOnly)
 	UTheHoleOSCComponent* OSCComponent;
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
@@ -50,7 +52,7 @@ private:
 	
 	// Physical world - virtual world relationship
 	UPROPERTY(EditInstanceOnly)
-		FVector2D RealScreenDimensions;
+	FVector2D RealScreenDimensions;
 	float Scale;
 
 	// Actor movement
@@ -60,9 +62,14 @@ private:
 	float LerpSpeed;
 
 	// Fade in and out
+	void UpdateScreens();
+	static const float DurationBeforeFadeOut;
 	static const float FadeInStep;
 	static const float FadeOutStep;
+	float TimeBeforeFadeOut;
 	float ScreenOpacity;
 	UPROPERTY()
 	UMaterialInstanceDynamic* ScreenMaterial;
+	UPROPERTY()
+	UMaterialInstanceDynamic* WarningScreenMaterial;
 };

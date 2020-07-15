@@ -2,8 +2,9 @@
 
 #include "TheHoleActor.h"
 
-const float ATheHoleActor::FadeInStep = 0.3;
-const float ATheHoleActor::FadeOutStep = 0.01;
+const float ATheHoleActor::FadeInStep = 0.02;
+const float ATheHoleActor::FadeOutStep = 0.1;
+const float ATheHoleActor::DurationBeforeFadeOut = 0.5f;
 
 // Sets default values
 ATheHoleActor::ATheHoleActor()
@@ -16,6 +17,7 @@ ATheHoleActor::ATheHoleActor()
 	
 	Target = FVector(0.0f, 0.0f, 1.8f);
 	ScreenOpacity = 0.0f;
+	TimeBeforeFadeOut = DurationBeforeFadeOut;
 }
 
 void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const
@@ -39,6 +41,11 @@ void ATheHoleActor::BeginPlay()
 	ScreenMaterial = UMaterialInstanceDynamic::Create(Material, NULL);
 	Mesh->SetMaterial(0, ScreenMaterial);
 
+	Mesh = WarningScreenMesh->GetStaticMeshComponent();
+	Material = Mesh->GetMaterial(0);
+	WarningScreenMaterial = UMaterialInstanceDynamic::Create(Material, NULL);
+	Mesh->SetMaterial(0, WarningScreenMaterial);
+
 	FVector ScreenDimensions = ScreenMesh->GetActorScale();
 	Scale = 0.5f * ScreenDimensions.X / RealScreenDimensions.X
 		+ 0.5f * ScreenDimensions.Y / RealScreenDimensions.Y;
@@ -61,15 +68,14 @@ void ATheHoleActor::Tick(float DeltaTime)
 	if (ComputeTarget())
 	{
 		// Fade in
-		ScreenOpacity -= FadeInStep;
+		TimeBeforeFadeOut = DurationBeforeFadeOut;
 	}
 	else
 	{
-		// No body detected : fade out
-		ScreenOpacity += FadeOutStep;
+		TimeBeforeFadeOut -= DeltaTime;
 	}
-	ScreenOpacity = FMath::Clamp(ScreenOpacity, 0.0f, 1.0f);
-	ScreenMaterial->SetScalarParameterValue(TEXT("Opacity"), ScreenOpacity);
+
+	UpdateScreens();
 
 	SetActorLocation(FMath::Lerp(
 		GetActorLocation(),
@@ -93,5 +99,32 @@ bool ATheHoleActor::ComputeTarget()
 		return false;
 	}
 	return true;
+}
+
+void ATheHoleActor::UpdateScreens()
+{
+	// Multiple bodies warning
+	if (OSCComponent->LessThanTwoBodies())
+	{
+		WarningScreenMaterial->SetScalarParameterValue(TEXT("Opacity"), 0.0f);
+	}
+	else
+	{
+		WarningScreenMaterial->SetScalarParameterValue(TEXT("Opacity"), 1.0f);
+		// Instantly trigger fade out
+		TimeBeforeFadeOut = 0.0f;
+	}
+
+	if (TimeBeforeFadeOut <= 0)
+	{
+		ScreenOpacity += FadeOutStep;
+	}
+	else
+	{
+		ScreenOpacity -= FadeInStep;
+	}
+
+	ScreenOpacity = FMath::Clamp(ScreenOpacity, 0.0f, 1.0f);
+	ScreenMaterial->SetScalarParameterValue(TEXT("Opacity"), ScreenOpacity);
 }
 

@@ -54,6 +54,7 @@ public:
 public:
 
 	bool GetHeadLocation(FVector& HeadLocation);
+	bool LessThanTwoBodies() const;
 
 	UPROPERTY(EditInstanceOnly)
 		FString ReceiveIPAdress;
