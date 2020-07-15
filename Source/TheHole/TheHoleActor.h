@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 
 #include "Engine/StaticMeshActor.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,24 +36,33 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+
+	// Referenced actors and components
 	UPROPERTY(EditInstanceOnly)
-		AStaticMeshActor* ScreenMesh;
+	AStaticMeshActor* ScreenMesh;
 	UPROPERTY(EditInstanceOnly)
-		UTheHoleOSCComponent* OSCComponent;
+	UTheHoleOSCComponent* OSCComponent;
 	UPROPERTY(VisibleAnywhere)
-		UCameraComponent* Camera;
+	UCameraComponent* Camera;
 	
+	// Projection matrix modifier
 	TSharedPtr<TheHoleSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtensionRef;
-
-	UPROPERTY(EditInstanceOnly)
-		float LerpSpeed;
 	
-
+	// Physical world - virtual world relationship
 	UPROPERTY(EditInstanceOnly)
 		FVector2D RealScreenDimensions;
-
 	float Scale;
 
+	// Actor movement
 	FVector Target;
 	bool ComputeTarget();
+	UPROPERTY(EditInstanceOnly)
+	float LerpSpeed;
+
+	// Fade in and out
+	static const float FadeInStep;
+	static const float FadeOutStep;
+	float ScreenOpacity;
+	UPROPERTY()
+	UMaterialInstanceDynamic* ScreenMaterial;
 };

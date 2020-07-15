@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "TheHoleActor.h"
+
+const float ATheHoleActor::FadeInStep = 0.3;
+const float ATheHoleActor::FadeOutStep = 0.01;
 
 // Sets default values
 ATheHoleActor::ATheHoleActor()
@@ -13,6 +15,7 @@ ATheHoleActor::ATheHoleActor()
 	OSCComponent = CreateDefaultSubobject<UTheHoleOSCComponent>(TEXT("OSC"));
 	
 	Target = FVector(0.0f, 0.0f, 1.8f);
+	ScreenOpacity = 0.0f;
 }
 
 void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const
@@ -30,6 +33,11 @@ void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) cons
 void ATheHoleActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	auto Mesh = ScreenMesh->GetStaticMeshComponent();
+	auto Material = Mesh->GetMaterial(0);
+	ScreenMaterial = UMaterialInstanceDynamic::Create(Material, NULL);
+	Mesh->SetMaterial(0, ScreenMaterial);
 
 	FVector ScreenDimensions = ScreenMesh->GetActorScale();
 	Scale = 0.5f * ScreenDimensions.X / RealScreenDimensions.X
@@ -53,13 +61,15 @@ void ATheHoleActor::Tick(float DeltaTime)
 	if (ComputeTarget())
 	{
 		// Fade in
-		// TODO
+		ScreenOpacity -= FadeInStep;
 	}
 	else
 	{
 		// No body detected : fade out
-		// TODO
+		ScreenOpacity += FadeOutStep;
 	}
+	ScreenOpacity = FMath::Clamp(ScreenOpacity, 0.0f, 1.0f);
+	ScreenMaterial->SetScalarParameterValue(TEXT("Opacity"), ScreenOpacity);
 
 	SetActorLocation(FMath::Lerp(
 		GetActorLocation(),
