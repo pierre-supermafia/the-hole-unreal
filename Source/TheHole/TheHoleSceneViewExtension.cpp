@@ -4,17 +4,27 @@
 #include "TheHoleSceneViewExtension.h"
 #include "TheHoleActor.h"
 
+/**
+ * CTOR
+ */
 TheHoleSceneViewExtension::TheHoleSceneViewExtension(const FAutoRegister& AutoRegister, ATheHoleActor* TheHoleActor)
 	: FSceneViewExtensionBase(AutoRegister)
 	, TheHoleActor(TheHoleActor)
 {
+	// Initialize the constant "z-fixer" matrix
 	ZAxisBoundTransform.SetIdentity();
 	ZAxisBoundTransform.M[2][2] = 0.5f;
 	ZAxisBoundTransform.M[3][2] = 0.5f;
 }
 
+/**
+ * DTOR
+ */
 TheHoleSceneViewExtension::~TheHoleSceneViewExtension() {}
 
+/**
+ * Overriden method
+ */
 void TheHoleSceneViewExtension::SetupViewProjectionMatrix(FSceneViewProjectionData& InOutProjectionData)
 {
 	ComputeMatrices(
@@ -24,6 +34,9 @@ void TheHoleSceneViewExtension::SetupViewProjectionMatrix(FSceneViewProjectionDa
 		);
 }
 
+/**
+ * Uses the ATheHoleActor's state to compute the required projection data
+ */
 void TheHoleSceneViewExtension::ComputeMatrices(
 	FMatrix& ProjectionMatrix,
 	FMatrix& RotationMatrix,
@@ -51,9 +64,9 @@ void TheHoleSceneViewExtension::ComputeMatrices(
 	vr.Normalize();
 	vu = pc - pa;
 	vu.Normalize();
-	vn = -FVector::CrossProduct(vr, vu);
+	vn = -FVector::CrossProduct(vr, vu); // Unreal's negative orientation
 
-	// Rotation matrix
+	// Rotation matrix (points away from the screen)
 	RotationMatrix.SetIdentity();
 	RotationMatrix.M[0][0] = -vr.X; RotationMatrix.M[0][1] = -vr.Y; RotationMatrix.M[0][2] = -vr.Z;
 	RotationMatrix.M[1][0] = -vu.X; RotationMatrix.M[1][1] = -vu.Y; RotationMatrix.M[1][2] = -vu.Z;

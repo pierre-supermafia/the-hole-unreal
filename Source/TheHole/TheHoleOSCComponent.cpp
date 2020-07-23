@@ -35,6 +35,7 @@ void UTheHoleOSCComponent::BeginPlay()
 	SendHandshake();	
 }
 
+// Called when the game ends
 void UTheHoleOSCComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
@@ -43,7 +44,6 @@ void UTheHoleOSCComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Server->Stop();
 }
-
 
 // Called every frame
 void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -58,24 +58,41 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	}
 }
 
+/**
+ * Computes the user's head location, and sets it in the given reference
+ * if the result is convincing enough. Returns true if it is the case.
+ * Return false if either no head or more than one was found
+ * 
+ * @param HeadLocation Vector in which to store the location if any is found
+ */
 bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
 {
 	if (LessThanTwoBodies())
 	{
 		CheckMultipleBodies();
 	}
-	if (! LessThanTwoBodies())
+	if (!LessThanTwoBodies())
 	{
 		return false;
 	}
 	return GetHead(HeadLocation, SKELETON) || GetHead(HeadLocation, BLOB);
 }
 
+/**
+ * Returns true if the warning timer for multiple bodies is not ellapsed
+ */
 bool UTheHoleOSCComponent::LessThanTwoBodies() const
 {
 	return MultipleBodiesWarningTimer <= 0;
 }
 
+/**
+ * Computes the user's head location using only skeletons or blobs and
+ * return true if the result is convincing. Return false otherwise.
+ * 
+ * @param HeadLocation Vector in which to store the location if any is found
+ * @param Type Either skeletons of blobs
+ */
 bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 {
 	float TotalConfidence = 0;
@@ -96,7 +113,9 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 	return false;
 }
 
-
+/**
+ * Checks if mutliple bodies are being detected by distinct cameras
+ */
 void UTheHoleOSCComponent::CheckMultipleBodies()
 {
 	for (auto it1 = SkeletonHeads.CreateConstIterator(); it1; ++it1)
@@ -165,6 +184,9 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 	}
 }
 
+/**
+ * Decrease the confidence of all head locations currently stored
+ */
 void UTheHoleOSCComponent::DecayConfidences()
 {
 	for (auto it = SkeletonHeads.CreateIterator(); it; ++it)
@@ -178,7 +200,9 @@ void UTheHoleOSCComponent::DecayConfidences()
 	}
 }
 
-
+/**
+ * Sets up the OSC client and server
+ */
 void UTheHoleOSCComponent::InitOSC()
 {
 	Client = UOSCManager::CreateOSCClient(BroadcastIPAdress, BroadcastPort, "TheHoleClient");
@@ -187,6 +211,9 @@ void UTheHoleOSCComponent::InitOSC()
 	Server->OnOscMessageReceived.AddDynamic(this, &UTheHoleOSCComponent::OnMessageReceived);
 }
 
+/**
+ * Create the OSC messages that the client will send
+ */
 void UTheHoleOSCComponent::CreateMessages()
 {
 	HandshakeMessage.SetAddress(HandshakeAddress);
@@ -196,6 +223,10 @@ void UTheHoleOSCComponent::CreateMessages()
 	UpdateMessage = UOSCManager::AddInt32(UpdateMessage, (int32)ReceivePort);
 }
 
+/**
+ * Sends the handshake message at the start of its lifecycle.
+ * Also sets up the timer that will send an update message periodically
+ */
 void UTheHoleOSCComponent::SendHandshake()
 {
 	Client->SendOSCMessage(HandshakeMessage);
@@ -211,11 +242,18 @@ void UTheHoleOSCComponent::SendHandshake()
 	);
 }
 
+/**
+ * Send the update message
+ */
 void UTheHoleOSCComponent::SendUpdate()
 {
 	Client->SendOSCMessage(UpdateMessage);
 }
 
+/**
+ * Dispatches any incoming message.
+ * Doesn't do anything if the message is not expected
+ */
 void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port)
 {
 	FOSCAddress Address = Message.GetAddress();
@@ -233,6 +271,11 @@ void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const F
 	}
 }
 
+/**
+ * Called whenever new skeleton data comes from OSC
+ * 
+ * @param Message An OSC message containing a skeleton's data
+ */
 void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
 {
 	int32 id;
@@ -247,6 +290,11 @@ void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
 	SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
 }
 
+/**
+ * Called whenever new blob data comes from OSC
+ * 
+ * @param Message An OSC message containing a blob's data
+ */
 void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 {
 	int32 id;
@@ -260,6 +308,9 @@ void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 	BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
 }
 
+/**
+ * Called whenever the multiple bodies message is received
+ */
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
 {
 	MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
