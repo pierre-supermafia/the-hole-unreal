@@ -12,10 +12,6 @@ public class TheHole : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "OSC" });
 
-		// PrivateIncludePathModuleNames.AddRange(new string[] { "OSC/Public", "OSC/Private" });
-
-		PublicIncludePaths.AddRange(new string[] { "OSC/Public", "OSC/Classes" });
-
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		

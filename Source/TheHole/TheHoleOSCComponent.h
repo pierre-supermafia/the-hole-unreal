@@ -9,23 +9,9 @@
 #include "OSCServer.h"
 #include "OSCClient.h"
 
+#include "FHead.h"
+
 #include "TheHoleOSCComponent.generated.h"
-
-USTRUCT()
-struct FHead {
-	GENERATED_BODY()
-
-	FHead() :
-		Position(FVector()),
-		Confidence(0) {}
-
-	FHead(FVector Position, float Confidence) :
-		Position(Position),
-		Confidence(Confidence) {}
-
-	FVector Position;
-	float Confidence;
-};
 
 enum BodyType
 {
