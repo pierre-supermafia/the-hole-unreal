@@ -96,8 +96,7 @@ private:
 
 	UFUNCTION()
 	void OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port);
-	void OnSkeletonReceived(const FOSCMessage& Message);
-	void OnBlobReceived(const FOSCMessage& Message);
+	void OnBodyReceived(const FOSCMessage& Message, BodyType Type);
 	void OnMultipleBodiesDetected(const FOSCMessage& Message);
 
 	TMap<uint8, FHead> SkeletonHeads;

@@ -218,14 +218,14 @@ void UTheHoleOSCComponent::SendUpdate()
 
 void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const FString& IPAddress, int32 Port)
 {
-	FOSCAddress Address = Message.GetAddress();
+	const FOSCAddress& Address = Message.GetAddress();
 	if (Address.Matches(SkeletonAddress))
 	{
-		OnSkeletonReceived(Message);
+		OnBodyReceived(Message, SKELETON);
 	}
 	else if (Address.Matches(BlobAddress))
 	{
-		OnBlobReceived(Message);
+		OnBodyReceived(Message, BLOB);
 	}
 	else if (Address.Matches(MultipleBodiesAlertAddress))
 	{
@@ -233,21 +233,7 @@ void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const F
 	}
 }
 
-void UTheHoleOSCComponent::OnSkeletonReceived(const FOSCMessage& Message)
-{
-	int32 id;
-	float x, y, z, conf;
-	UOSCManager::GetInt32(Message, 0, id);
-
-	UOSCManager::GetFloat(Message, 1, x);
-	UOSCManager::GetFloat(Message, 2, y);
-	UOSCManager::GetFloat(Message, 3, z);
-	UOSCManager::GetFloat(Message, 4, conf);
-
-	SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
-}
-
-void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
+void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType Type)
 {
 	int32 id;
 	float x, y, z;
@@ -257,7 +243,18 @@ void UTheHoleOSCComponent::OnBlobReceived(const FOSCMessage& Message)
 	UOSCManager::GetFloat(Message, 2, y);
 	UOSCManager::GetFloat(Message, 3, z);
 
-	BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
+	if (Type == SKELETON)
+	{
+		float conf;
+	UOSCManager::GetFloat(Message, 4, conf);
+
+	SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
+}
+	else
+{
+		BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
+	}
+
 }
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
