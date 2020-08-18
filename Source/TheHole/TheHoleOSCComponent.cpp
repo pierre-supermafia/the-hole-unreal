@@ -149,7 +149,7 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
+			if (SquareDistance < SquareDistanceThreshold) {
 				return true;
 			}
 		}
@@ -165,7 +165,7 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
+			if (SquareDistance < SquareDistanceThreshold) {
 				return true;
 			}
 		}
@@ -188,7 +188,7 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
+			if (SquareDistance < SquareDistanceThreshold) {
 				return true;
 			}
 		}
