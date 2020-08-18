@@ -5,6 +5,7 @@
 
 const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/request/handshake");
 const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request/update");
+
 const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
 const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
@@ -266,26 +267,20 @@ void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const F
 void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType Type)
 {
 	int32 id;
-	float x, y, z;
+	float x, y, z, conf;
 	UOSCManager::GetInt32(Message, 0, id);
 
 	UOSCManager::GetFloat(Message, 1, x);
 	UOSCManager::GetFloat(Message, 2, y);
 	UOSCManager::GetFloat(Message, 3, z);
+	UOSCManager::GetFloat(Message, 4, conf);
 
-	if (Type == SKELETON)
-	{
-		float conf;
-		UOSCManager::GetFloat(Message, 4, conf);
+	TMap<uint8, FHead>& Heads = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
+	FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
 
-		SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
-	}
-	else
-	{
-		BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
-	}
-
+	Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 }
+
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
 {
