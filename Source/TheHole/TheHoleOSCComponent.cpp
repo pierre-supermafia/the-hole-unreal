@@ -10,8 +10,9 @@ const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/tr
 const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
+
 const float UTheHoleOSCComponent::SquareDistanceThreshold = 1.5f * 1.5f;
-const float UTheHoleOSCComponent::MultipleBodiesWarningDuration = 1.5f;
+
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.5f;
 
 // Sets default values for this component's properties
@@ -21,7 +22,11 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	MultipleBodiesWarningTimer = 0;
+	MultipleBodiesAlertLevel = 0;
+
+	// Decrease is always applied, so Increase speed must compensate
+	MultipleBodiesAlertLevelDecreaseSpeed = 1.0f / MutlipleBodiesWarningDeactivationTime;
+	MultipleBodiesAlertLevelIncreaseSpeed = 1.0f / MultipleBodiesWarningActivationTime;
 }
 
 
@@ -52,9 +57,33 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	DecayConfidences();
 
-	if (MultipleBodiesWarningTimer > 0)
+	HandleMultipleBodiesWarning(DeltaTime);
+}
+
+void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
+{
+	if (MultipleBodiesAlertLevel > 1.0f)
 	{
-		MultipleBodiesWarningTimer -= DeltaTime;
+		DisplayMultipleBodiesWarning = true;
+		MultipleBodiesAlertLevel = 1.0f;
+	}
+	else if (MultipleBodiesAlertLevel < 0.0f)
+	{
+		DisplayMultipleBodiesWarning = false;
+		MultipleBodiesAlertLevel = 0.0f;
+	}
+
+	// Bypass costly check if the sensors already report on multiple bodies
+	HasDetectedMultipleBodiesLastUpdate = HasDetectedMultipleBodiesLastUpdate || CheckMultipleBodies();
+	
+	if (HasDetectedMultipleBodiesLastUpdate)
+	{
+		MultipleBodiesAlertLevel += MultipleBodiesAlertLevelIncreaseSpeed * DeltaTime;
+		HasDetectedMultipleBodiesLastUpdate = false;
+	}
+	else
+	{
+		MultipleBodiesAlertLevel -= MultipleBodiesAlertLevelDecreaseSpeed * DeltaTime;
 	}
 }
 
@@ -73,7 +102,7 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
 
 bool UTheHoleOSCComponent::LessThanTwoBodies() const
 {
-	return MultipleBodiesWarningTimer <= 0;
+	return MultipleBodiesAlertLevel <= 0.0f;
 }
 
 bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
@@ -90,6 +119,10 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 
 	if (TotalConfidence > LowerConfidenceThreshold)
 	{
+		if (Type == BLOB)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, TEXT("USING BLOBS"));
+		}
 		HeadLocation = TotalPosition / TotalConfidence;
 		return true;
 	}
@@ -97,7 +130,7 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 }
 
 
-void UTheHoleOSCComponent::CheckMultipleBodies()
+bool UTheHoleOSCComponent::CheckMultipleBodies()
 {
 	for (auto it1 = SkeletonHeads.CreateConstIterator(); it1; ++it1)
 	{
@@ -117,8 +150,7 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it2->Value.Position
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+				return true;
 			}
 		}
 
@@ -134,8 +166,7 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it2->Value.Position
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+				return true;
 			}
 		}
 	}
@@ -158,8 +189,7 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it2->Value.Position
 			);
 			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+				return true;
 			}
 		}
 	}
@@ -246,12 +276,12 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
 	if (Type == SKELETON)
 	{
 		float conf;
-	UOSCManager::GetFloat(Message, 4, conf);
+		UOSCManager::GetFloat(Message, 4, conf);
 
-	SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
-}
+		SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
+	}
 	else
-{
+	{
 		BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
 	}
 
@@ -259,6 +289,6 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
 {
-	MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+	HasDetectedMultipleBodiesLastUpdate = true;
 }
 

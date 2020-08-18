@@ -64,8 +64,14 @@ public:
 		FString BroadcastIPAdress;
 	UPROPERTY(EditInstanceOnly)
 		int32 BroadcastPort;
+	
 	UPROPERTY(EditInstanceOnly)
 		float ConfidenceDecay;
+
+	UPROPERTY(EditInstanceOnly)
+		float MultipleBodiesWarningActivationTime;
+	UPROPERTY(EditInstanceOnly)
+		float MutlipleBodiesWarningDeactivationTime;
 
 private:
 	static const FOSCAddress HandshakeAddress;
@@ -105,10 +111,15 @@ private:
 	bool GetHead(FVector& HeadLocation, BodyType Type) const;
 	static const float LowerConfidenceThreshold;
 
-	void CheckMultipleBodies();
+	void HandleMultipleBodiesWarning(float DeltaTime);
+	bool CheckMultipleBodies();
 	static const float SquareDistanceThreshold;
-	static const float MultipleBodiesWarningDuration;
-	float MultipleBodiesWarningTimer;
+
+	bool DisplayMultipleBodiesWarning = false;
+	bool HasDetectedMultipleBodiesLastUpdate = false;
+	float MultipleBodiesAlertLevelIncreaseSpeed;
+	float MultipleBodiesAlertLevelDecreaseSpeed;
+	float MultipleBodiesAlertLevel;
 
 	void DecayConfidences();
 };
