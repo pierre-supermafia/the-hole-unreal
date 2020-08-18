@@ -5,7 +5,7 @@
 
 FHead::FHead() :
 	Position(FVector()),
-	Confidence(0)
+	Confidence(0.0f)
 {}
 
 FHead::FHead(FVector Position, float Confidence) :

@@ -107,7 +107,7 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 {
 	float TotalConfidence = 0;
 	FVector TotalPosition = FVector(0, 0, 0);
-	auto Collection = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
+	auto& Collection = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
 
 	for (auto it = Collection.CreateConstIterator(); it; ++it)
 	{

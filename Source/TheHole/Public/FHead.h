@@ -18,5 +18,5 @@ struct FHead {
 
 	FVector Position;
 	float Confidence;
-	PeriodAverager periodAverager;
+	PeriodAverager PeriodAverager;
 };
