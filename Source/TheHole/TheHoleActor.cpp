@@ -27,7 +27,7 @@ ATheHoleActor::ATheHoleActor()
  * @param pa Vector in which the lower right point will be stored
  * @param pa Vector in which the upper left point will be stored
  */
-void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, Vector& pc) const
+void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const
 {
 	FTransform Transform = ScreenMesh->GetTransform();
 
