@@ -38,12 +38,26 @@ public:
 private:
 
 	// Referenced actors and components
-	UPROPERTY(EditInstanceOnly)
-	AStaticMeshActor* ScreenMesh;
-	UPROPERTY(EditInstanceOnly)
-	AStaticMeshActor* WarningScreenMesh;
-	UPROPERTY(EditInstanceOnly)
-	UTheHoleOSCComponent* OSCComponent;
+	UPROPERTY(
+		EditInstanceOnly,
+		Category="THE HOLE|Overlay",
+		meta = (
+			DisplayName="Screen",
+			Tooltip="ScreenMesh that will always fill the actor's view. Window through which the hole is seen."
+		)
+	)
+		AStaticMeshActor* ScreenMesh;
+	UPROPERTY(
+		EditInstanceOnly,
+		Category="THE HOLE|Overlay",
+		meta = (
+			DisplayName="Warning screen",
+			Tooltip="ScreenMesh that displays the multiple bodies warning."
+		)
+	)
+		AStaticMeshActor* WarningScreenMesh;
+	UPROPERTY(EditInstanceOnly, Category="THE HOLE")
+		UTheHoleOSCComponent* OSCComponent;
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
 	
@@ -51,14 +65,29 @@ private:
 	TSharedPtr<TheHoleSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtensionRef;
 	
 	// Physical world - virtual world relationship
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category="THE HOLE",
+		meta = (
+			Tooltip="Dimensions (in meters) of the real world screen"
+		)
+	)
 	FVector2D RealScreenDimensions;
 	float Scale;
 
 	// Actor movement
 	FVector Target;
 	bool ComputeTarget();
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "THE HOLE",
+		meta = (
+			DisplayName="Speed towards camera target",
+			Tooltip="Portion of the path to the target that is travelled each tick",
+			ClampMin="0.001",
+			ClampMax="1"
+		)
+	)
 	float LerpSpeed;
 
 	// Fade in and out

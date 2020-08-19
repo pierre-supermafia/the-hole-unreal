@@ -70,9 +70,10 @@ public:
 	UPROPERTY(
 		EditInstanceOnly,
 		DisplayName="Body Data Duration",
-		meta = (Tooltip="Time it takes before any data received from the tracker becomes ignored",
-		ClampMin="0.01",
-		ClampMax="10"
+		meta = (
+			Tooltip="Time it takes before any data received from the tracker becomes ignored",
+			ClampMin="0.01",
+			ClampMax="10"
 		)
 	)
 		float TimeToForget;
@@ -80,17 +81,23 @@ public:
 	UPROPERTY(
 		EditInstanceOnly,
 		Category = "Multiple Bodies Warning",
-		meta = (Tooltip="Time before the warning is displayed",
-		ClampMin="0.01",
-		ClampMax="10")
+		meta = (
+			DisplayName="Activation time",
+			Tooltip="Time before the warning is displayed",
+			ClampMin="0.01",
+			ClampMax="10"
+		)
 	)		
 		float MultipleBodiesWarningActivationTime;
 	UPROPERTY(
 		EditInstanceOnly,
 		Category = "Multiple Bodies Warning",
-		meta = (Tooltip="Duration of the warning display",
-		ClampMin = "0.01",
-		ClampMax = "10")
+		meta = (
+			DisplayName="Deactivation time",
+			Tooltip="Duration of the warning display",
+			ClampMin = "0.01",
+			ClampMax = "10"
+		)
 	)
 		float MutlipleBodiesWarningDeactivationTime;
 
