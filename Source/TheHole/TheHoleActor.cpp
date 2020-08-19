@@ -20,14 +20,19 @@ ATheHoleActor::ATheHoleActor()
 	TimeBeforeFadeOut = DurationBeforeFadeOut;
 }
 
-void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, FVector& pc) const
+/**
+ * Gives the three corners of the screen necessary to the projection calculations
+ * 
+ * @param pa Vector in which the lower left point will be stored
+ * @param pa Vector in which the lower right point will be stored
+ * @param pa Vector in which the upper left point will be stored
+ */
+void ATheHoleActor::GetScreenCorners(FVector& pa, FVector& pb, Vector& pc) const
 {
 	FTransform Transform = ScreenMesh->GetTransform();
-	// Bottom-left corner
+
 	pa = Transform.TransformPosition(FVector(-50.0f, 50.0f, 0.0f));
-	// Bottom-right corner
 	pb = Transform.TransformPosition(FVector(50.0f, 50.0f, 0.0f));
-	// Top-left corner
 	pc = Transform.TransformPosition(FVector(-50.0f, -50.0f, 0.0f));
 }
 
@@ -36,16 +41,19 @@ void ATheHoleActor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Prepare the screen to have its opacity changed
 	auto Mesh = ScreenMesh->GetStaticMeshComponent();
 	auto Material = Mesh->GetMaterial(0);
 	ScreenMaterial = UMaterialInstanceDynamic::Create(Material, NULL);
 	Mesh->SetMaterial(0, ScreenMaterial);
 
+	// Prepare the warning mesh to have its opacity changed
 	Mesh = WarningScreenMesh->GetStaticMeshComponent();
 	Material = Mesh->GetMaterial(0);
 	WarningScreenMaterial = UMaterialInstanceDynamic::Create(Material, NULL);
 	Mesh->SetMaterial(0, WarningScreenMaterial);
 
+	// Compute the real world to virtual world scale
 	FVector ScreenDimensions = ScreenMesh->GetActorScale();
 	Scale = 0.5f * ScreenDimensions.X / RealScreenDimensions.X
 		+ 0.5f * ScreenDimensions.Y / RealScreenDimensions.Y;
@@ -75,13 +83,13 @@ void ATheHoleActor::Tick(float DeltaTime)
 		TimeBeforeFadeOut -= DeltaTime;
 	}
 
-	UpdateScreens();
-
 	SetActorLocation(FMath::Lerp(
 		GetActorLocation(),
 		Scale * Target + ScreenMesh->GetActorLocation(),
 		LerpSpeed
 	));
+
+	UpdateScreens();
 
 	// Camera perspective
 	if (!SceneViewExtensionRef.IsValid())
@@ -91,7 +99,8 @@ void ATheHoleActor::Tick(float DeltaTime)
 }
 
 /**
-*/
+ * Consults the UTheHoleOSCComponent to have the head's position. Returns true if a head was given.
+ */
 bool ATheHoleActor::ComputeTarget()
 {
 	if (IsValid(OSCComponent) && !OSCComponent->GetHeadLocation(Target))
@@ -101,6 +110,10 @@ bool ATheHoleActor::ComputeTarget()
 	return true;
 }
 
+/**
+ * Update the two screens' opacity
+ * For fading in and out, and for the warning display
+ */
 void ATheHoleActor::UpdateScreens()
 {
 	// Multiple bodies warning
