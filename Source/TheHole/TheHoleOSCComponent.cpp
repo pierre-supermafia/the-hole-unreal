@@ -5,13 +5,13 @@
 
 const FOSCAddress UTheHoleOSCComponent::HandshakeAddress = FOSCAddress("/ks/request/handshake");
 const FOSCAddress UTheHoleOSCComponent::UpdateAddress = FOSCAddress("/ks/request/update");
+
 const FOSCAddress UTheHoleOSCComponent::SkeletonAddress= FOSCAddress("/ks/server/track/skeleton/head");
 const FOSCAddress UTheHoleOSCComponent::BlobAddress = FOSCAddress("/ks/server/track/headblob");
 const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress("/ks/server/track/multiple-bodies");
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
 const float UTheHoleOSCComponent::SquareDistanceThreshold = 1.5f * 1.5f;
-const float UTheHoleOSCComponent::MultipleBodiesWarningDuration = 1.5f;
 const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.5f;
 
 // Sets default values for this component's properties
@@ -21,7 +21,12 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	MultipleBodiesWarningTimer = 0;
+	ConfidenceDecaySpeed = 1.0f / TimeToForget;
+
+	MultipleBodiesAlertLevel = 0;
+	// Decrease is always applied, so Increase speed must compensate
+	MultipleBodiesAlertLevelDecreaseSpeed = 1.0f / MutlipleBodiesWarningDeactivationTime;
+	MultipleBodiesAlertLevelIncreaseSpeed = 1.0f / MultipleBodiesWarningActivationTime;
 }
 
 
@@ -50,11 +55,39 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	DecayConfidences();
+	DecayConfidences(DeltaTime);
+	HandleMultipleBodiesWarning(DeltaTime);
+}
 
-	if (MultipleBodiesWarningTimer > 0)
+/**
+ * Handles the current state of the alert warning about multiple bodies in the scene
+ * 
+ * @param DeltaTime Time since last update
+ */
+void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
+{
+	if (MultipleBodiesAlertLevel > 1.0f)
 	{
-		MultipleBodiesWarningTimer -= DeltaTime;
+		DisplayMultipleBodiesWarning = true;
+		MultipleBodiesAlertLevel = 1.0f;
+	}
+	else if (MultipleBodiesAlertLevel < 0.0f)
+	{
+		DisplayMultipleBodiesWarning = false;
+		MultipleBodiesAlertLevel = 0.0f;
+	}
+
+	// Bypass costly check if the sensors already report on multiple bodies
+	HasDetectedMultipleBodiesLastUpdate = HasDetectedMultipleBodiesLastUpdate || CheckMultipleBodies();
+	
+	if (HasDetectedMultipleBodiesLastUpdate)
+	{
+		MultipleBodiesAlertLevel += MultipleBodiesAlertLevelIncreaseSpeed * DeltaTime;
+		HasDetectedMultipleBodiesLastUpdate = false;
+	}
+	else
+	{
+		MultipleBodiesAlertLevel -= MultipleBodiesAlertLevelDecreaseSpeed * DeltaTime;
 	}
 }
 
@@ -83,7 +116,7 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
  */
 bool UTheHoleOSCComponent::LessThanTwoBodies() const
 {
-	return MultipleBodiesWarningTimer <= 0;
+	return MultipleBodiesAlertLevel <= 0.0f;
 }
 
 /**
@@ -97,7 +130,7 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 {
 	float TotalConfidence = 0;
 	FVector TotalPosition = FVector(0, 0, 0);
-	auto Collection = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
+	auto& Collection = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
 
 	for (auto it = Collection.CreateConstIterator(); it; ++it)
 	{
@@ -107,6 +140,10 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 
 	if (TotalConfidence > LowerConfidenceThreshold)
 	{
+		if (Type == BLOB)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, TEXT("USING BLOBS"));
+		}
 		HeadLocation = TotalPosition / TotalConfidence;
 		return true;
 	}
@@ -116,7 +153,7 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 /**
  * Checks if mutliple bodies are being detected by distinct cameras
  */
-void UTheHoleOSCComponent::CheckMultipleBodies()
+bool UTheHoleOSCComponent::CheckMultipleBodies()
 {
 	for (auto it1 = SkeletonHeads.CreateConstIterator(); it1; ++it1)
 	{
@@ -135,9 +172,8 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+			if (SquareDistance < SquareDistanceThreshold) {
+				return true;
 			}
 		}
 
@@ -152,9 +188,8 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+			if (SquareDistance < SquareDistanceThreshold) {
+				return true;
 			}
 		}
 	}
@@ -176,27 +211,48 @@ void UTheHoleOSCComponent::CheckMultipleBodies()
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance > SquareDistanceThreshold) {
-				MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
-				return;
+			if (SquareDistance < SquareDistanceThreshold) {
+				return true;
 			}
 		}
 	}
+
+	return false;
 }
 
 /**
  * Decrease the confidence of all head locations currently stored
+ * 
+ * @param DeltaTime Time since last update
  */
-void UTheHoleOSCComponent::DecayConfidences()
+void UTheHoleOSCComponent::DecayConfidences(float DeltaTime)
 {
 	for (auto it = SkeletonHeads.CreateIterator(); it; ++it)
 	{
-		it.Value().Confidence *= ConfidenceDecay;
+		DecayConfidence(it.Value(), DeltaTime);
 	}
 
 	for (auto it = BlobHeads.CreateIterator(); it; ++it)
 	{
-		it.Value().Confidence *= ConfidenceDecay;
+		DecayConfidence(it.Value(), DeltaTime);
+	}
+}
+
+/**
+ * Decrease the condifence of the given head location
+ * 
+ * @param DeltaTime Time since last update
+ */
+void UTheHoleOSCComponent::DecayConfidence(FHead& Head, float DeltaTime)
+{
+	float Period = Head.PeriodAverager.AveragePeriod();
+	if (Period > 0.0f)
+	{
+		// We do not reduce the confidence so long as we cannot have
+		// even an estimation of the tracker's frequency
+		// Shouldn't be a problem since we ca afford one second before
+		// the installation works
+		Head.Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
 	}
 }
 
@@ -280,25 +336,27 @@ void UTheHoleOSCComponent::OnMessageReceived(const FOSCMessage& Message, const F
 void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType Type)
 {
 	int32 id;
-	float x, y, z;
+	float x, y, z, conf;
 	UOSCManager::GetInt32(Message, 0, id);
+	UOSCManager::GetFloat(Message, 4, conf);
 
-	UOSCManager::GetFloat(Message, 1, x);
-	UOSCManager::GetFloat(Message, 2, y);
-	UOSCManager::GetFloat(Message, 3, z);
-
-	if (Type == SKELETON)
+	TMap<uint8, FHead>& Heads = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
+	if (conf < 0.0f)
 	{
-		float conf;
-		UOSCManager::GetFloat(Message, 4, conf);
-
-		SkeletonHeads.Add(id, FHead(FVector(x, -y, z), conf));
+		// Dummy message
+		// We don't overwrite the position, but we update the times
+		FHead* Head = Heads.Find(id);
+		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 	}
 	else
 	{
-		BlobHeads.Add(id, FHead(FVector(x, -y, z), 1.0f));
-	}
+		UOSCManager::GetFloat(Message, 1, x);
+		UOSCManager::GetFloat(Message, 2, y);
+		UOSCManager::GetFloat(Message, 3, z);
 
+		FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
+		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+	}
 }
 
 /**
@@ -306,6 +364,6 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
  */
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
 {
-	MultipleBodiesWarningTimer = MultipleBodiesWarningDuration;
+	HasDetectedMultipleBodiesLastUpdate = true;
 }
 

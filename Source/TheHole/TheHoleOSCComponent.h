@@ -9,23 +9,9 @@
 #include "OSCServer.h"
 #include "OSCClient.h"
 
+#include "FHead.h"
+
 #include "TheHoleOSCComponent.generated.h"
-
-USTRUCT()
-struct FHead {
-	GENERATED_BODY()
-
-	FHead() :
-		Position(FVector()),
-		Confidence(0) {}
-
-	FHead(FVector Position, float Confidence) :
-		Position(Position),
-		Confidence(Confidence) {}
-
-	FVector Position;
-	float Confidence;
-};
 
 enum BodyType
 {
@@ -64,8 +50,14 @@ public:
 		FString BroadcastIPAdress;
 	UPROPERTY(EditInstanceOnly)
 		int32 BroadcastPort;
+	
 	UPROPERTY(EditInstanceOnly)
-		float ConfidenceDecay;
+		float TimeToForget;
+
+	UPROPERTY(EditInstanceOnly)
+		float MultipleBodiesWarningActivationTime;
+	UPROPERTY(EditInstanceOnly)
+		float MutlipleBodiesWarningDeactivationTime;
 
 private:
 	static const FOSCAddress HandshakeAddress;
@@ -105,10 +97,17 @@ private:
 	bool GetHead(FVector& HeadLocation, BodyType Type) const;
 	static const float LowerConfidenceThreshold;
 
-	void CheckMultipleBodies();
+	void HandleMultipleBodiesWarning(float DeltaTime);
+	bool CheckMultipleBodies();
 	static const float SquareDistanceThreshold;
-	static const float MultipleBodiesWarningDuration;
-	float MultipleBodiesWarningTimer;
 
-	void DecayConfidences();
+	bool DisplayMultipleBodiesWarning = false;
+	bool HasDetectedMultipleBodiesLastUpdate = false;
+	float MultipleBodiesAlertLevelIncreaseSpeed;
+	float MultipleBodiesAlertLevelDecreaseSpeed;
+	float MultipleBodiesAlertLevel;
+
+	float ConfidenceDecaySpeed;
+	void DecayConfidences(float DeltaTime);
+	void DecayConfidence(FHead& Head, float DeltaTime);
 };
