@@ -151,7 +151,7 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 }
 
 /**
- * Checks if mutliple bodies are being detected by distinct cameras
+ * Returns whether mutliple bodies are being detected by distinct cameras
  */
 bool UTheHoleOSCComponent::CheckMultipleBodies()
 {
