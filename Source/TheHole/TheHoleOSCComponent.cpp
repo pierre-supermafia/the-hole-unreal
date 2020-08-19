@@ -21,8 +21,9 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	MultipleBodiesAlertLevel = 0;
+	ConfidenceDecaySpeed = 1.0f / TimeToForget;
 
+	MultipleBodiesAlertLevel = 0;
 	// Decrease is always applied, so Increase speed must compensate
 	MultipleBodiesAlertLevelDecreaseSpeed = 1.0f / MutlipleBodiesWarningDeactivationTime;
 	MultipleBodiesAlertLevelIncreaseSpeed = 1.0f / MultipleBodiesWarningActivationTime;
@@ -54,8 +55,7 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	DecayConfidences();
-
+	DecayConfidences(DeltaTime);
 	HandleMultipleBodiesWarning(DeltaTime);
 }
 
@@ -196,16 +196,25 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 	return false;
 }
 
-void UTheHoleOSCComponent::DecayConfidences()
+void UTheHoleOSCComponent::DecayConfidences(float DeltaTime)
 {
 	for (auto it = SkeletonHeads.CreateIterator(); it; ++it)
 	{
-		it.Value().Confidence *= ConfidenceDecay;
+		FHead Head = it.Value();
+		float Period = Head.PeriodAverager.AveragePeriod();
+		if (Period > 0.0f)
+		{
+			// We do not reduce the confidence so long as we cannot have
+			// even an estimation of the tracker's frequency
+			// Shouldn't be a problem since we ca afford one second before
+			// the installation works
+			it.Value().Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
+	}
 	}
 
 	for (auto it = BlobHeads.CreateIterator(); it; ++it)
 	{
-		it.Value().Confidence *= ConfidenceDecay;
+		it.Value().Confidence *= ConfidenceDecaySpeed;
 	}
 }
 

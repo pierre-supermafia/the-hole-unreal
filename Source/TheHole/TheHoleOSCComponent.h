@@ -52,7 +52,7 @@ public:
 		int32 BroadcastPort;
 	
 	UPROPERTY(EditInstanceOnly)
-		float ConfidenceDecay;
+		float TimeToForget;
 
 	UPROPERTY(EditInstanceOnly)
 		float MultipleBodiesWarningActivationTime;
@@ -107,5 +107,6 @@ private:
 	float MultipleBodiesAlertLevelDecreaseSpeed;
 	float MultipleBodiesAlertLevel;
 
-	void DecayConfidences();
+	float ConfidenceDecaySpeed;
+	void DecayConfidences(float DeltaTime);
 };
