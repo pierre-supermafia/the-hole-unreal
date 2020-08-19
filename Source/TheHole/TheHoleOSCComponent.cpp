@@ -209,7 +209,7 @@ void UTheHoleOSCComponent::DecayConfidences(float DeltaTime)
 			// Shouldn't be a problem since we ca afford one second before
 			// the installation works
 			it.Value().Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
-	}
+		}
 	}
 
 	for (auto it = BlobHeads.CreateIterator(); it; ++it)
@@ -278,18 +278,25 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
 	int32 id;
 	float x, y, z, conf;
 	UOSCManager::GetInt32(Message, 0, id);
-
-	UOSCManager::GetFloat(Message, 1, x);
-	UOSCManager::GetFloat(Message, 2, y);
-	UOSCManager::GetFloat(Message, 3, z);
 	UOSCManager::GetFloat(Message, 4, conf);
 
 	TMap<uint8, FHead>& Heads = (Type == SKELETON) ? SkeletonHeads : BlobHeads;
-	FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
+	if (conf < 0.0f)
+	{
+		// We don't overwrite the position, but we update the times
+		FHead* Head = Heads.Find(id);
+		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+	}
+	else
+	{
+		UOSCManager::GetFloat(Message, 1, x);
+		UOSCManager::GetFloat(Message, 2, y);
+		UOSCManager::GetFloat(Message, 3, z);
 
-	Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+		FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
+		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+	}
 }
-
 
 void UTheHoleOSCComponent::OnMultipleBodiesDetected(const FOSCMessage& Message)
 {
