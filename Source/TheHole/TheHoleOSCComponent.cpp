@@ -200,21 +200,25 @@ void UTheHoleOSCComponent::DecayConfidences(float DeltaTime)
 {
 	for (auto it = SkeletonHeads.CreateIterator(); it; ++it)
 	{
-		FHead Head = it.Value();
-		float Period = Head.PeriodAverager.AveragePeriod();
-		if (Period > 0.0f)
-		{
-			// We do not reduce the confidence so long as we cannot have
-			// even an estimation of the tracker's frequency
-			// Shouldn't be a problem since we ca afford one second before
-			// the installation works
-			it.Value().Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
-		}
+		DecayConfidence(it.Value(), DeltaTime);
 	}
 
 	for (auto it = BlobHeads.CreateIterator(); it; ++it)
 	{
-		it.Value().Confidence *= ConfidenceDecaySpeed;
+		DecayConfidence(it.Value(), DeltaTime);
+	}
+}
+
+void UTheHoleOSCComponent::DecayConfidence(FHead& Head, float DeltaTime)
+{
+	float Period = Head.PeriodAverager.AveragePeriod();
+	if (Period > 0.0f)
+	{
+		// We do not reduce the confidence so long as we cannot have
+		// even an estimation of the tracker's frequency
+		// Shouldn't be a problem since we ca afford one second before
+		// the installation works
+		Head.Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
 	}
 }
 

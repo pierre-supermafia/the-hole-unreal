@@ -109,4 +109,5 @@ private:
 
 	float ConfidenceDecaySpeed;
 	void DecayConfidences(float DeltaTime);
+	void DecayConfidence(FHead& Head, float DeltaTime);
 };
