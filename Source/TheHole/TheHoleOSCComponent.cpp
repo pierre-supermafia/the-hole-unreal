@@ -254,9 +254,9 @@ void UTheHoleOSCComponent::DecayConfidence(FHead& Head, float DeltaTime)
 	{
 		// We do not reduce the confidence so long as we cannot have
 		// even an estimation of the tracker's frequency
-		// Shouldn't be a problem since we ca afford one second before
+		// Shouldn't be a problem since we can afford one second before
 		// the installation works
-		Head.Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
+		Head.Confidence -= ConfidenceDecaySpeed * Period * DeltaTime;
 	}
 }
 
