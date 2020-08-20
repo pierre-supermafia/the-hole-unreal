@@ -345,17 +345,28 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
 	{
 		// Dummy message
 		// We don't overwrite the position, but we update the times
-		FHead* Head = Heads.Find(id);
-		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+		FHead Head = Heads.FindOrAdd(id);
+		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 	}
 	else
 	{
 		UOSCManager::GetFloat(Message, 1, x);
 		UOSCManager::GetFloat(Message, 2, y);
 		UOSCManager::GetFloat(Message, 3, z);
+		y *= -1;
 
-		FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
-		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+		FHead* Head = Heads.Find(id);
+		if (Head)
+		{
+			Head->Position.Set(x, y, z);
+			Head->Confidence = conf;
+		}
+		else
+		{
+			Head = &Heads.Add(id, FHead(FVector(x, y, z), conf));
+		}
+
+		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 	}
 }
 
