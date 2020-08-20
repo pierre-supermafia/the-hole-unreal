@@ -68,12 +68,12 @@ void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
 {
 	if (MultipleBodiesAlertLevel > 1.0f)
 	{
-		DisplayMultipleBodiesWarning = true;
+		MultipleBodiesWarningActive = true;
 		MultipleBodiesAlertLevel = 1.0f;
 	}
 	else if (MultipleBodiesAlertLevel < 0.0f)
 	{
-		DisplayMultipleBodiesWarning = false;
+		MultipleBodiesWarningActive = false;
 		MultipleBodiesAlertLevel = 0.0f;
 	}
 
@@ -116,7 +116,7 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
  */
 bool UTheHoleOSCComponent::LessThanTwoBodies() const
 {
-	return MultipleBodiesAlertLevel <= 0.0f;
+	return !MultipleBodiesWarningActive;
 }
 
 /**

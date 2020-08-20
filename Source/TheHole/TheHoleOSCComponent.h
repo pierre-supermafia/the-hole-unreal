@@ -143,7 +143,7 @@ private:
 	bool CheckMultipleBodies();
 	static const float SquareDistanceThreshold;
 
-	bool DisplayMultipleBodiesWarning = false;
+	bool MultipleBodiesWarningActive = false;
 	bool HasDetectedMultipleBodiesLastUpdate = false;
 	float MultipleBodiesAlertLevelIncreaseSpeed;
 	float MultipleBodiesAlertLevelDecreaseSpeed;
