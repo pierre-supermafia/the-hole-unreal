@@ -134,8 +134,12 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 
 	for (auto it = Collection.CreateConstIterator(); it; ++it)
 	{
-		TotalConfidence += it->Value.Confidence;
-		TotalPosition += it->Value.Position * it->Value.Confidence;
+		FHead Head = it.Value();
+		if (Head.Confidence > 0.0f)
+		{
+			TotalConfidence += Head.Confidence;
+			TotalPosition += Head.Position * Head.Confidence;
+		}
 	}
 
 	if (TotalConfidence > LowerConfidenceThreshold)
