@@ -12,12 +12,14 @@
 class THEHOLE_API PeriodAverager
 {
 public:
-	PeriodAverager() {}
+	PeriodAverager() :
+		MeasuredUpdateTimes(0)
+		{}
 
 	void AddUpdateTime(float UpdateTime);
 	float AveragePeriod();
 
 private:
 	float LastUpdatesTimes[TOTAL_MEASUREMENTS];
-	int MeasuredUpdateTimes = 0;
+	int MeasuredUpdateTimes;
 };

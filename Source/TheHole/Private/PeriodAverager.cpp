@@ -5,7 +5,7 @@
 
 void PeriodAverager::AddUpdateTime(float UpdateTime)
 {
-	for (int i = MeasuredUpdateTimes; i > 0; i--)
+	for (int i = MeasuredUpdateTimes - 1; i > 0; i--)
 	{
 		LastUpdatesTimes[i] = LastUpdatesTimes[i - 1];
 	}

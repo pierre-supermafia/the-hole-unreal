@@ -12,7 +12,7 @@ const FOSCAddress UTheHoleOSCComponent::MultipleBodiesAlertAddress = FOSCAddress
 
 const float UTheHoleOSCComponent::UpdatePeriod = 9.0f;
 const float UTheHoleOSCComponent::SquareDistanceThreshold = 1.5f * 1.5f;
-const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.5f;
+const float UTheHoleOSCComponent::LowerConfidenceThreshold = 0.7f;
 
 // Sets default values for this component's properties
 UTheHoleOSCComponent::UTheHoleOSCComponent()
@@ -20,13 +20,6 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	ConfidenceDecaySpeed = 1.0f / TimeToForget;
-
-	MultipleBodiesAlertLevel = 0;
-	// Decrease is always applied, so Increase speed must compensate
-	MultipleBodiesAlertLevelDecreaseSpeed = 1.0f / MutlipleBodiesWarningDeactivationTime;
-	MultipleBodiesAlertLevelIncreaseSpeed = 1.0f / MultipleBodiesWarningActivationTime;
 }
 
 
@@ -34,6 +27,12 @@ UTheHoleOSCComponent::UTheHoleOSCComponent()
 void UTheHoleOSCComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ConfidenceDecaySpeed = 1.0f / TimeToForget;
+
+	MultipleBodiesAlertLevel = 0.0f;
+	MultipleBodiesAlertLevelDecreaseSpeed = 1.0f / MutlipleBodiesWarningDeactivationTime;
+	MultipleBodiesAlertLevelIncreaseSpeed = 1.0f / MultipleBodiesWarningActivationTime;
 
 	CreateMessages();
 	InitOSC();
@@ -66,20 +65,9 @@ void UTheHoleOSCComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
  */
 void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
 {
-	if (MultipleBodiesAlertLevel > 1.0f)
-	{
-		DisplayMultipleBodiesWarning = true;
-		MultipleBodiesAlertLevel = 1.0f;
-	}
-	else if (MultipleBodiesAlertLevel < 0.0f)
-	{
-		DisplayMultipleBodiesWarning = false;
-		MultipleBodiesAlertLevel = 0.0f;
-	}
-
 	// Bypass costly check if the sensors already report on multiple bodies
 	HasDetectedMultipleBodiesLastUpdate = HasDetectedMultipleBodiesLastUpdate || CheckMultipleBodies();
-	
+
 	if (HasDetectedMultipleBodiesLastUpdate)
 	{
 		MultipleBodiesAlertLevel += MultipleBodiesAlertLevelIncreaseSpeed * DeltaTime;
@@ -88,6 +76,18 @@ void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
 	else
 	{
 		MultipleBodiesAlertLevel -= MultipleBodiesAlertLevelDecreaseSpeed * DeltaTime;
+	}
+	
+	// Check bounds
+	if (MultipleBodiesAlertLevel > 1.0f)
+	{
+		MultipleBodiesWarningActive = true;
+		MultipleBodiesAlertLevel = 1.0f;
+	}
+	else if (MultipleBodiesAlertLevel < 0.0f)
+	{
+		MultipleBodiesWarningActive = false;
+		MultipleBodiesAlertLevel = 0.0f;
 	}
 }
 
@@ -100,14 +100,6 @@ void UTheHoleOSCComponent::HandleMultipleBodiesWarning(float DeltaTime)
  */
 bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
 {
-	if (LessThanTwoBodies())
-	{
-		CheckMultipleBodies();
-	}
-	if (!LessThanTwoBodies())
-	{
-		return false;
-	}
 	return GetHead(HeadLocation, SKELETON) || GetHead(HeadLocation, BLOB);
 }
 
@@ -116,7 +108,7 @@ bool UTheHoleOSCComponent::GetHeadLocation(FVector& HeadLocation)
  */
 bool UTheHoleOSCComponent::LessThanTwoBodies() const
 {
-	return MultipleBodiesAlertLevel <= 0.0f;
+	return !MultipleBodiesWarningActive;
 }
 
 /**
@@ -134,15 +126,19 @@ bool UTheHoleOSCComponent::GetHead(FVector& HeadLocation, BodyType Type) const
 
 	for (auto it = Collection.CreateConstIterator(); it; ++it)
 	{
-		TotalConfidence += it->Value.Confidence;
-		TotalPosition += it->Value.Position * it->Value.Confidence;
+		FHead Head = it.Value();
+		if (Head.Confidence > 0.0f)
+		{
+			TotalConfidence += Head.Confidence;
+			TotalPosition += Head.Position * Head.Confidence;
+		}
 	}
 
 	if (TotalConfidence > LowerConfidenceThreshold)
 	{
 		if (Type == BLOB)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, TEXT("USING BLOBS"));
+			//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Blue, TEXT("USING BLOBS"));
 		}
 		HeadLocation = TotalPosition / TotalConfidence;
 		return true;
@@ -168,11 +164,11 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 			{
 				continue;
 			}
-			float SquareDistance = FVector::DistSquared(
+			float SquareDistance = FVector::DistSquaredXY(
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance < SquareDistanceThreshold) {
+			if (SquareDistance > SquareDistanceThreshold) {
 				return true;
 			}
 		}
@@ -184,11 +180,11 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 			{
 				continue;
 			}
-			float SquareDistance = FVector::DistSquared(
+			float SquareDistance = FVector::DistSquaredXY(
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance < SquareDistanceThreshold) {
+			if (SquareDistance > SquareDistanceThreshold) {
 				return true;
 			}
 		}
@@ -207,11 +203,11 @@ bool UTheHoleOSCComponent::CheckMultipleBodies()
 			{
 				continue;
 			}
-			float SquareDistance = FVector::DistSquared(
+			float SquareDistance = FVector::DistSquaredXY(
 				it1->Value.Position,
 				it2->Value.Position
 			);
-			if (SquareDistance < SquareDistanceThreshold) {
+			if (SquareDistance > SquareDistanceThreshold) {
 				return true;
 			}
 		}
@@ -231,10 +227,11 @@ void UTheHoleOSCComponent::DecayConfidences(float DeltaTime)
 	{
 		DecayConfidence(it.Value(), DeltaTime);
 	}
-
+	//GEngine->ClearOnScreenDebugMessages();
 	for (auto it = BlobHeads.CreateIterator(); it; ++it)
 	{
 		DecayConfidence(it.Value(), DeltaTime);
+		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("BLOB confidence : %g"), it.Value().Confidence));
 	}
 }
 
@@ -250,10 +247,10 @@ void UTheHoleOSCComponent::DecayConfidence(FHead& Head, float DeltaTime)
 	{
 		// We do not reduce the confidence so long as we cannot have
 		// even an estimation of the tracker's frequency
-		// Shouldn't be a problem since we ca afford one second before
+		// Shouldn't be a problem since we can afford one second before
 		// the installation works
-		Head.Confidence -= ConfidenceDecaySpeed * DeltaTime / Period;
-	}
+		Head.Confidence -= ConfidenceDecaySpeed * Period * DeltaTime;
+	} 
 }
 
 /**
@@ -345,17 +342,28 @@ void UTheHoleOSCComponent::OnBodyReceived(const FOSCMessage& Message, BodyType T
 	{
 		// Dummy message
 		// We don't overwrite the position, but we update the times
-		FHead* Head = Heads.Find(id);
-		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+		FHead Head = Heads.FindOrAdd(id);
+		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 	}
 	else
 	{
 		UOSCManager::GetFloat(Message, 1, x);
 		UOSCManager::GetFloat(Message, 2, y);
 		UOSCManager::GetFloat(Message, 3, z);
+		y *= -1;
 
-		FHead Head = Heads.FindOrAdd(id, FHead(FVector(x, y, z), conf));
-		Head.PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
+		FHead* Head = Heads.Find(id);
+		if (Head)
+		{
+			Head->Position.Set(x, y, z);
+			Head->Confidence = conf;
+		}
+		else
+		{
+			Head = &Heads.Add(id, FHead(FVector(x, y, z), conf));
+		}
+
+		Head->PeriodAverager.AddUpdateTime(GetOwner()->GetGameTimeSinceCreation());
 	}
 }
 

@@ -4,12 +4,12 @@
 #include "FHead.h"
 
 FHead::FHead() :
-	Position(FVector()),
-	Confidence(0.0f)
+	FHead(FVector(), -1.0f)
 {}
 
 FHead::FHead(FVector Position, float Confidence) :
 	Position(Position),
-	Confidence(Confidence)
+	Confidence(Confidence),
+	PeriodAverager()
 {}
 

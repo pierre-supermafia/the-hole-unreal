@@ -42,21 +42,63 @@ public:
 	bool GetHeadLocation(FVector& HeadLocation);
 	bool LessThanTwoBodies() const;
 
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category="Network",
+		meta = (Tooltip="The IP address of this machine")
+		)
 		FString ReceiveIPAdress;
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "Network",
+		meta = (Tooltip="Port of this machine (should not be changed)")
+	)
 		int32 ReceivePort;
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "Network",
+		meta = (Tooltip="The IP used for local broadcasting (last address of the subnet)")
+	)
 		FString BroadcastIPAdress;
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "Network",
+		meta = (Tooltip="Port from which data is sent from the trackers (should not be changed)")
+	)
 		int32 BroadcastPort;
 	
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		DisplayName="Body Data Duration",
+		meta = (
+			Tooltip="Time it takes before any data received from the tracker becomes ignored",
+			ClampMin="0.01",
+			ClampMax="10"
+		)
+	)
 		float TimeToForget;
 
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "Multiple Bodies Warning",
+		meta = (
+			DisplayName="Activation time",
+			Tooltip="Time before the warning is displayed",
+			ClampMin="0.01",
+			ClampMax="10"
+		)
+	)		
 		float MultipleBodiesWarningActivationTime;
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(
+		EditInstanceOnly,
+		Category = "Multiple Bodies Warning",
+		meta = (
+			DisplayName="Deactivation time",
+			Tooltip="Duration of the warning display",
+			ClampMin = "0.01",
+			ClampMax = "10"
+		)
+	)
 		float MutlipleBodiesWarningDeactivationTime;
 
 private:
@@ -101,7 +143,7 @@ private:
 	bool CheckMultipleBodies();
 	static const float SquareDistanceThreshold;
 
-	bool DisplayMultipleBodiesWarning = false;
+	bool MultipleBodiesWarningActive = false;
 	bool HasDetectedMultipleBodiesLastUpdate = false;
 	float MultipleBodiesAlertLevelIncreaseSpeed;
 	float MultipleBodiesAlertLevelDecreaseSpeed;
